@@ -96,27 +96,14 @@ function switchView(isAuth) {
   }
 }
 
-async function handleAuth(action, e) {
+async function handleLogin(e) {
   e.preventDefault();
-  const formPrefix = action === 'login' ? 'login' : 'register';
-  const email = $(`#${formPrefix}-email`).value.trim();
-  const password = $(`#${formPrefix}-password`).value;
-  const name = action === 'register' ? $('#register-name').value.trim() : undefined;
+  const email = $('#login-email').value.trim();
+  const password = $('#login-password').value;
 
   try {
     authError.style.display = 'none';
-    const body = action === 'register' ? { name, email, password } : { email, password };
-    const data = await apiRequest(`/auth/${action}`, 'POST', body);
-    
-    if (action === 'register') {
-      registerForm.reset();
-      registerForm.classList.remove('active');
-      loginForm.classList.add('active');
-      $('#login-email').value = email;
-      showToast('Tạo tài khoản thành công! Vui lòng truy cập.');
-      return;
-    }
-
+    const data = await apiRequest(`/auth/login`, 'POST', { email, password });
     setToken(data.token);
     currentUser = data;
     onLoginSuccess();
@@ -124,6 +111,72 @@ async function handleAuth(action, e) {
     authError.textContent = err.message;
     authError.style.display = 'block';
   }
+}
+
+async function requestOtp() {
+  const name = $('#register-name').value.trim();
+  const email = $('#register-email').value.trim();
+  const password = $('#register-password').value;
+
+  if (!name || !email || password.length < 6) {
+    authError.textContent = 'Vui lòng nhập đủ tên, email và mật khẩu (tối thiểu 6 ký tự)';
+    authError.style.display = 'block';
+    return;
+  }
+
+  try {
+    authError.style.display = 'none';
+    const btn = $('#btn-request-otp');
+    btn.disabled = true;
+    btn.textContent = 'Đang gửi mã...';
+
+    await apiRequest('/auth/send-otp', 'POST', { email });
+    
+    // Switch to step 2
+    $('#register-step-1').style.display = 'none';
+    $('#register-step-2').style.display = 'block';
+    $('#display-otp-email').textContent = email;
+    $('#register-otp').focus();
+    showToast('Mã xác nhận đã được gửi vào email của bạn');
+  } catch (err) {
+    authError.textContent = err.message;
+    authError.style.display = 'block';
+  } finally {
+    const btn = $('#btn-request-otp');
+    btn.disabled = false;
+    btn.textContent = 'Lấy mã xác nhận 🚀';
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const name = $('#register-name').value.trim();
+  const email = $('#register-email').value.trim();
+  const password = $('#register-password').value;
+  const otp = $('#register-otp').value.trim();
+
+  try {
+    authError.style.display = 'none';
+    await apiRequest('/auth/register', 'POST', { name, email, password, otp });
+    
+    // Reset back to normal view
+    resetRegisterForm();
+    registerForm.classList.remove('active');
+    loginForm.classList.add('active');
+    $('#login-email').value = email;
+    $('#login-password').focus();
+    
+    showToast('Đăng ký sổ tay thành công!', 'success');
+  } catch (err) {
+    authError.textContent = err.message;
+    authError.style.display = 'block';
+  }
+}
+
+function resetRegisterForm() {
+  registerForm.reset();
+  $('#register-step-1').style.display = 'block';
+  $('#register-step-2').style.display = 'none';
 }
 
 function onLoginSuccess() {
@@ -141,7 +194,8 @@ function logout() {
   currentNotebookId = null;
   switchView(true);
   loginForm.reset();
-  registerForm.reset();
+  resetRegisterForm();
+  authError.style.display = 'none';
 }
 
 // ========== NOTEBOOK FUNCTIONS ==========
@@ -422,15 +476,17 @@ async function handleTaskSubmit(e) {
 document.addEventListener('DOMContentLoaded', () => {
   // Auth Toggles
   $('#show-register').addEventListener('click', (e) => {
-    e.preventDefault(); loginForm.classList.remove('active'); registerForm.classList.add('active'); authError.style.display = 'none';
+    e.preventDefault(); loginForm.classList.remove('active'); registerForm.classList.add('active'); authError.style.display = 'none'; resetRegisterForm();
   });
   $('#show-login').addEventListener('click', (e) => {
     e.preventDefault(); registerForm.classList.remove('active'); loginForm.classList.add('active'); authError.style.display = 'none';
   });
 
   // Forms
-  loginForm.addEventListener('submit', (e) => handleAuth('login', e));
-  registerForm.addEventListener('submit', (e) => handleAuth('register', e));
+  loginForm.addEventListener('submit', handleLogin);
+  $('#btn-request-otp').addEventListener('click', requestOtp);
+  $('#btn-back-step-1').addEventListener('click', resetRegisterForm);
+  registerForm.addEventListener('submit', handleRegister);
   $('#logout-btn').addEventListener('click', logout);
   
   // Modals
