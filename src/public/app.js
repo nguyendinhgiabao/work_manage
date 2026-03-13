@@ -112,10 +112,16 @@ async function handleRegister(e) {
 
   try {
     authError.style.display = 'none';
-    const data = await apiRequest('/auth/register', 'POST', { name, email, password });
-    setToken(data.token);
-    currentUser = data;
-    onLoginSuccess();
+    await apiRequest('/auth/register', 'POST', { name, email, password });
+    
+    // Đăng ký thành công -> chuyển về form đăng nhập thay vì tự động đăng nhập
+    registerForm.reset();
+    registerForm.classList.remove('active');
+    loginForm.classList.add('active');
+    $('#login-email').value = email; // Điền sẵn email giúp trải nghiệm tốt hơn
+    $('#login-password').focus();
+    
+    showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
   } catch (err) {
     authError.textContent = err.message;
     authError.style.display = 'block';
