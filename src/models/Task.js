@@ -31,6 +31,11 @@ const taskSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    notebook: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Notebook',
+      required: true,
+    },
   },
   {
     timestamps: true,

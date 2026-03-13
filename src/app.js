@@ -17,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/notebooks', require('./routes/notebookRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 
 // Serve frontend cho tất cả routes khác

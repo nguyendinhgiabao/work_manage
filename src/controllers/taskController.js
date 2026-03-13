@@ -4,7 +4,11 @@ const Task = require('../models/Task');
 // @route   POST /api/tasks
 const createTask = async (req, res) => {
   try {
-    const { title, description, status, priority, dueDate } = req.body;
+    const { title, description, status, priority, dueDate, notebookId } = req.body;
+
+    if (!notebookId) {
+      return res.status(400).json({ message: 'Cần chọn sổ tay (notebook) để chứa ghi chú' });
+    }
 
     const task = await Task.create({
       title,
@@ -13,6 +17,7 @@ const createTask = async (req, res) => {
       priority,
       dueDate,
       user: req.user._id,
+      notebook: notebookId,
     });
 
     res.status(201).json(task);
@@ -21,11 +26,15 @@ const createTask = async (req, res) => {
   }
 };
 
-// @desc    Lấy danh sách công việc của user
+// @desc    Lấy danh sách công việc của user (lọc theo notebook)
 // @route   GET /api/tasks
 const getTasks = async (req, res) => {
   try {
     const filter = { user: req.user._id };
+
+    if (req.query.notebookId) {
+      filter.notebook = req.query.notebookId;
+    }
 
     // Filter theo status nếu có
     if (req.query.status) {
