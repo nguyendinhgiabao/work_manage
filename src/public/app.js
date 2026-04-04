@@ -12,6 +12,10 @@ let searchQuery = '';
 let isCalendarMode = false;
 let fullCalendar = null;
 
+// New: Inactivity Session Tracking
+let inactivityTimer = null;
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 mins
+
 // ========== DOM ELEMENTS ==========
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -247,6 +251,9 @@ function onLoginSuccess() {
   calendarViewContainer.style.display = 'none';
   
   loadNotebooks();
+  
+  // Khởi động bộ đếm không hoạt động
+  resetInactivityTimer();
 }
 
 function logout() {
@@ -261,6 +268,30 @@ function logout() {
   resetRegisterForm();
   authError.style.display = 'none';
   $('#admin-panel-btn').style.display = 'none';
+  
+  // Clear inactivity timer
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+}
+
+// ========== INACTIVITY LOGIC ========== 
+function resetInactivityTimer() {
+  if (!getToken()) return; // Chỉ chạy khi đã đăng nhập
+  
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  
+  inactivityTimer = setTimeout(() => {
+    handleAutoLogout();
+  }, INACTIVITY_TIMEOUT);
+}
+
+function handleAutoLogout() {
+  if (!getToken()) return;
+  
+  logout();
+  showToast('Bạn đã bị đăng xuất do không hoạt động trong 30 phút 🔒', 'info');
 }
 
 // ========== NOTEBOOK FUNCTIONS ==========
@@ -859,11 +890,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial Auth Check
   if (getToken()) {
     apiRequest('/auth/profile')
-      .then((user) => { currentUser = user; onLoginSuccess(); })
+      .then((user) => { 
+        currentUser = user; 
+        onLoginSuccess(); 
+      })
       .catch(() => { removeToken(); switchView(true); });
   } else {
     switchView(true);
   }
+
+  // Global Inactivity Listeners
+  ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, resetInactivityTimer, true);
+  });
 });
 
 // ========== CALENDAR FUNCTIONS ==========
