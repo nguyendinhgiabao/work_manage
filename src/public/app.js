@@ -186,6 +186,11 @@ async function handleRegister(e) {
   const otp = $('#register-otp').value.trim();
 
   try {
+    if (!otp || otp.length !== 6) {
+      authError.textContent = 'Vui lòng nhập mã OTP gồm 6 chữ số';
+      authError.style.display = 'block';
+      return;
+    }
     authError.style.display = 'none';
     await apiRequest('/auth/register', 'POST', { name, email, password, otp });
     
