@@ -992,6 +992,7 @@ function openShareModal() {
 
 function renderCollaborators(notebook) {
   const container = $('#collaborators-list');
+  if (!container) return; // Bảo vệ nếu DOM chưa sẵn sàng
   container.innerHTML = '';
   
   // Owner first
