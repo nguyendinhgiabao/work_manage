@@ -52,6 +52,7 @@ app.use('/api/auth', authLimiter);
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/notebooks', require('./routes/notebookRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Serve frontend cho tất cả routes khác
 app.get('{*path}', (req, res) => {

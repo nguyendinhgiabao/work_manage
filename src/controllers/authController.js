@@ -42,10 +42,17 @@ const register = async (req, res, next) => {
     if (user) {
       // Xóa OTP khỏi database sau khi xác thực thành công
       await Otp.deleteMany({ email });
+      // Ghi nhật ký đăng ký
+      const ActivityLog = require('../models/ActivityLog');
+      try {
+        await ActivityLog.create({ action: 'REGISTER', byUser: user._id, details: 'Tài khoản đăng ký mới' });
+      } catch (e) {}
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
@@ -120,10 +127,17 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      // Ghi nhật ký đăng nhập
+      const ActivityLog = require('../models/ActivityLog');
+      try {
+        await ActivityLog.create({ action: 'LOGIN', byUser: user._id, details: 'Đăng nhập thành công' });
+      } catch (e) {}
+
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {

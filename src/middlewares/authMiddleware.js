@@ -17,6 +17,10 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'User không tồn tại' });
       }
 
+      if (req.user.status === 'blocked') {
+        return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa' });
+      }
+
       next();
     } catch (error) {
       return res.status(401).json({ message: 'Token không hợp lệ' });
@@ -28,4 +32,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Không có quyền truy cập, yêu cầu quyền Admin' });
+  }
+};
+
+module.exports = { protect, admin };

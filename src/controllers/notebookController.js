@@ -19,11 +19,22 @@ const createNotebook = async (req, res, next) => {
   }
 };
 
-// @desc    Lấy danh sách sổ tay của user
+const User = require('../models/User');
+
+// @desc    Lấy danh sách sổ tay của user (bao gồm cả sổ tay được chia sẻ)
 // @route   GET /api/notebooks
 const getNotebooks = async (req, res, next) => {
   try {
-    const notebooks = await Notebook.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const notebooks = await Notebook.find({
+      $or: [
+        { user: req.user._id },
+        { collaborators: req.user._id }
+      ]
+    })
+    .populate('user', 'name email')
+    .populate('collaborators', 'name email')
+    .sort({ createdAt: -1 });
+    
     res.json(notebooks);
   } catch (error) {
     next(error);
@@ -41,7 +52,10 @@ const updateNotebook = async (req, res, next) => {
 
     const notebook = await Notebook.findOne({
       _id: req.params.id,
-      user: req.user._id,
+      $or: [
+        { user: req.user._id },
+        { collaborators: req.user._id }
+      ]
     });
 
     if (!notebook) {
@@ -62,11 +76,11 @@ const deleteNotebook = async (req, res, next) => {
   try {
     const notebook = await Notebook.findOne({
       _id: req.params.id,
-      user: req.user._id,
+      user: req.user._id, // Chỉ chủ sở hữu mới có quyền xóa
     });
 
     if (!notebook) {
-      return res.status(404).json({ message: 'Không tìm thấy sổ tay' });
+      return res.status(404).json({ message: 'Không tìm thấy sổ tay hoặc bạn không có quyền xóa' });
     }
 
     // Xóa tất cả tasks thuộc sổ tay này trước
@@ -80,4 +94,68 @@ const deleteNotebook = async (req, res, next) => {
   }
 };
 
-module.exports = { createNotebook, getNotebooks, updateNotebook, deleteNotebook };
+// @desc    Mời thành viên vào sổ tay
+// @route   POST /api/notebooks/:id/invite
+const inviteMember = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Vui lòng nhập email người được mời' });
+    }
+
+    const notebook = await Notebook.findOne({
+      _id: req.params.id,
+      user: req.user._id // Chỉ chủ sở hữu mới được mời
+    });
+
+    if (!notebook) {
+      return res.status(404).json({ message: 'Sổ tay không tồn tại hoặc bạn không có quyền mời' });
+    }
+
+    const userToInvite = await User.findOne({ email: email.toLowerCase() });
+    if (!userToInvite) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại trong hệ thống' });
+    }
+
+    if (userToInvite._id.equals(req.user._id)) {
+      return res.status(400).json({ message: 'Bạn không thể mời chính mình' });
+    }
+
+    if (notebook.collaborators.includes(userToInvite._id)) {
+      return res.status(400).json({ message: 'Người này đã là thành viên của sổ tay' });
+    }
+
+    notebook.collaborators.push(userToInvite._id);
+    await notebook.save();
+
+    res.json({ message: 'Đã mời thành viên thành công', notebook });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Xóa thành viên khỏi sổ tay
+// @route   DELETE /api/notebooks/:id/collaborators/:userId
+const removeMember = async (req, res, next) => {
+  try {
+    const notebook = await Notebook.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!notebook) {
+      return res.status(404).json({ message: 'Sổ tay không tồn tại hoặc bạn không có quyền' });
+    }
+
+    notebook.collaborators = notebook.collaborators.filter(
+      (id) => id.toString() !== req.params.userId
+    );
+    await notebook.save();
+
+    res.json({ message: 'Đã xóa thành viên', notebook });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createNotebook, getNotebooks, updateNotebook, deleteNotebook, inviteMember, removeMember };
