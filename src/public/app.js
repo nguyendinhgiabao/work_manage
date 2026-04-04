@@ -9,7 +9,7 @@ let tasks = [];
 let editingTaskId = null;
 let draggedTaskElement = null;
 let searchQuery = '';
-let isCalendarMode = false;
+let isCalendarMode = localStorage.getItem('isCalendarMode') === 'true';
 let fullCalendar = null;
 
 // New: Inactivity Session Tracking
@@ -245,10 +245,15 @@ function onLoginSuccess() {
   $('#user-name').textContent = currentUser.name;
   $('#user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
   
-  // Reset view state
-  isCalendarMode = false;
-  kanbanContainer.style.display = 'flex';
-  calendarViewContainer.style.display = 'none';
+  // Reset view state theo cache
+  kanbanContainer.style.display = isCalendarMode ? 'none' : 'flex';
+  calendarViewContainer.style.display = isCalendarMode ? 'block' : 'none';
+  if (isCalendarMode) {
+    $('#btn-toggle-view').classList.add('active');
+    setTimeout(renderCalendar, 100);
+  } else {
+    $('#btn-toggle-view').classList.remove('active');
+  }
   
   loadNotebooks();
   
@@ -861,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
   shareForm.addEventListener('submit', handleInviteUser);
 
   // View Toggle (Board/Calendar)
-  $('#btn-toggle-view').addEventListener('click', toggleCalendarView);
+  $('#btn-toggle-view').addEventListener('click', toggleViewMode);
 
   // Search
   $('#search-toggle-btn').addEventListener('click', () => {
@@ -911,8 +916,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ========== CALENDAR FUNCTIONS ==========
-function toggleCalendarView() {
+function toggleViewMode() {
   isCalendarMode = !isCalendarMode;
+  localStorage.setItem('isCalendarMode', isCalendarMode);
+  
   if (isCalendarMode) {
     kanbanContainer.style.display = 'none';
     calendarViewContainer.style.display = 'block';
@@ -960,7 +967,9 @@ function renderCalendar() {
     },
     eventDrop: async (info) => {
       const taskId = info.event.id;
-      const newDate = info.event.start.toISOString().split('T')[0];
+      // Tránh lỗi múi giờ: Lấy ngày theo giờ địa phương
+      const d = info.event.start;
+      const newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
       try {
         await apiRequest(`/tasks/${taskId}`, 'PUT', { dueDate: newDate });
@@ -973,6 +982,24 @@ function renderCalendar() {
         showToast(`Đã đổi ngày sang ${formatDateDisplay(newDate)}`);
       } catch (err) {
         showToast('Lỗi khi đổi ngày: ' + err.message, 'error');
+        info.revert();
+      }
+    },
+    eventResize: async (info) => {
+      const taskId = info.event.id;
+      const d = info.event.start;
+      const newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
+      try {
+        await apiRequest(`/tasks/${taskId}`, 'PUT', { dueDate: newDate });
+        const tIdx = tasks.findIndex(t => t._id === taskId);
+        if (tIdx !== -1) tasks[tIdx].dueDate = newDate;
+        
+        renderKanban(); 
+        updateStats();
+        showToast(`Đã cập nhật ngày: ${formatDateDisplay(newDate)}`);
+      } catch (err) {
+        showToast('Lỗi: ' + err.message, 'error');
         info.revert();
       }
     },
