@@ -301,7 +301,12 @@ async function loadNotebooks() {
     renderNotebookList();
     
     if (notebooks.length > 0) {
-      selectNotebook(notebooks[0]._id);
+      if (!currentNotebookId) {
+        selectNotebook(notebooks[0]._id);
+      } else {
+        renderNotebookList();
+        updateWorkspaceView();
+      }
     } else {
       currentNotebookId = null;
       updateWorkspaceView();
@@ -438,7 +443,7 @@ function selectNotebook(id) {
 
   loadTasks();
   renderCollaborators(notebook);
-  loadNotebooks(); // Re-render list to update active class
+  renderNotebookList(); // Re-render list to update active class
 }
 
 function updateWorkspaceView() {
