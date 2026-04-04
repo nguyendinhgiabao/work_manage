@@ -42,18 +42,28 @@ const getToken = () => localStorage.getItem('token');
 const setToken = (token) => localStorage.setItem('token', token);
 const removeToken = () => localStorage.removeItem('token');
 
-async function apiRequest(endpoint, method = 'GET', body = null) {
+async function apiRequest(endpoint, method = 'GET', body = null, timeoutMs = 15000) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const options = { method, headers };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  const options = { method, headers, signal: controller.signal };
   if (body) options.body = JSON.stringify(body);
 
-  const res = await fetch(`${API_URL}${endpoint}`, options);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Lỗi hệ thống');
-  return data;
+  try {
+    const res = await fetch(`${API_URL}${endpoint}`, options);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Lỗi hệ thống');
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('Yêu cầu quá thời gian chờ, vui lòng thử lại.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function showToast(message, type = 'success') {

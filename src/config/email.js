@@ -7,6 +7,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Timeout để tránh bị treo khi credentials sai hoặc mạng chậm
+  connectionTimeout: 10000,  // 10s kết nối
+  greetingTimeout: 10000,    // 10s chờ greeting
+  socketTimeout: 10000,      // 10s chờ socket
 });
 
 module.exports = transporter;
