@@ -2,16 +2,20 @@ const Task = require('../models/Task');
 
 // @desc    Tạo công việc mới
 // @route   POST /api/tasks
-const createTask = async (req, res) => {
+const createTask = async (req, res, next) => {
   try {
     const { title, description, status, priority, dueDate, notebookId } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Vui lòng nhập tiêu đề công việc' });
+    }
 
     if (!notebookId) {
       return res.status(400).json({ message: 'Cần chọn sổ tay (notebook) để chứa ghi chú' });
     }
 
     const task = await Task.create({
-      title,
+      title: title.trim(),
       description,
       status,
       priority,
@@ -22,13 +26,13 @@ const createTask = async (req, res) => {
 
     res.status(201).json(task);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// @desc    Lấy danh sách công việc của user (lọc theo notebook)
+// @desc    Lấy danh sách công việc của user (lọc theo notebook, status, priority, từ khóa)
 // @route   GET /api/tasks
-const getTasks = async (req, res) => {
+const getTasks = async (req, res, next) => {
   try {
     const filter = { user: req.user._id };
 
@@ -36,26 +40,33 @@ const getTasks = async (req, res) => {
       filter.notebook = req.query.notebookId;
     }
 
-    // Filter theo status nếu có
     if (req.query.status) {
       filter.status = req.query.status;
     }
 
-    // Filter theo priority nếu có
     if (req.query.priority) {
       filter.priority = req.query.priority;
+    }
+
+    // Tìm kiếm theo từ khóa trong title hoặc description
+    if (req.query.search && req.query.search.trim()) {
+      const keyword = req.query.search.trim();
+      filter.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } },
+      ];
     }
 
     const tasks = await Task.find(filter).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // @desc    Lấy chi tiết 1 công việc
 // @route   GET /api/tasks/:id
-const getTaskById = async (req, res) => {
+const getTaskById = async (req, res, next) => {
   try {
     const task = await Task.findOne({
       _id: req.params.id,
@@ -68,13 +79,13 @@ const getTaskById = async (req, res) => {
 
     res.json(task);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // @desc    Cập nhật công việc
 // @route   PUT /api/tasks/:id
-const updateTask = async (req, res) => {
+const updateTask = async (req, res, next) => {
   try {
     const task = await Task.findOne({
       _id: req.params.id,
@@ -87,7 +98,7 @@ const updateTask = async (req, res) => {
 
     const { title, description, status, priority, dueDate } = req.body;
 
-    task.title = title || task.title;
+    task.title = title ? title.trim() : task.title;
     task.description = description !== undefined ? description : task.description;
     task.status = status || task.status;
     task.priority = priority || task.priority;
@@ -96,13 +107,13 @@ const updateTask = async (req, res) => {
     const updatedTask = await task.save();
     res.json(updatedTask);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // @desc    Xóa công việc
 // @route   DELETE /api/tasks/:id
-const deleteTask = async (req, res) => {
+const deleteTask = async (req, res, next) => {
   try {
     const task = await Task.findOne({
       _id: req.params.id,
@@ -116,7 +127,7 @@ const deleteTask = async (req, res) => {
     await Task.deleteOne({ _id: task._id });
     res.json({ message: 'Đã xóa công việc' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

@@ -1,32 +1,27 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Otp = require('../models/Otp');
-const nodemailer = require('nodemailer');
+const transporter = require('../config/email');
 
-// Cấu hình transporter gửi email
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// Tạo JWT token
+// Tạo JWT token (7 ngày)
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '7d',
   });
 };
 
 // @desc    Đăng ký tài khoản mới (Có xác thực OTP)
 // @route   POST /api/auth/register
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const { name, email, password, otp } = req.body;
 
-    if (!otp) {
-      return res.status(400).json({ message: 'Vui lòng nhập mã OTP' });
+    if (!name || !email || !password || !otp) {
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự' });
     }
 
     // Kiểm tra email đã tồn tại chưa
@@ -57,16 +52,20 @@ const register = async (req, res) => {
       res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // @desc    Gửi mã OTP xác nhận đăng ký
 // @route   POST /api/auth/send-otp
-const sendOtp = async (req, res) => {
+const sendOtp = async (req, res, next) => {
   try {
     const { email } = req.body;
-    
+
+    if (!email) {
+      return res.status(400).json({ message: 'Vui lòng nhập email' });
+    }
+
     // Kiểm tra xem email đã tồn tại chưa
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -104,15 +103,19 @@ const sendOtp = async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ message: 'Mã OTP đã được gửi đến email của bạn' });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi gửi email: ' + error.message });
+    next(error);
   }
 };
 
 // @desc    Đăng nhập
 // @route   POST /api/auth/login
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Vui lòng nhập email và mật khẩu' });
+    }
 
     const user = await User.findOne({ email });
 
@@ -127,13 +130,13 @@ const login = async (req, res) => {
       res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // @desc    Lấy thông tin profile
 // @route   GET /api/auth/profile
-const getProfile = async (req, res) => {
+const getProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
@@ -142,7 +145,7 @@ const getProfile = async (req, res) => {
       res.status(404).json({ message: 'Không tìm thấy user' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

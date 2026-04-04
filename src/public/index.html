@@ -16,7 +16,7 @@
   <div id="auth-section" class="auth-section">
     <div class="auth-card">
       <div class="auth-header">
-        <div class="logo-icon"></div>
+        <img src="img/logowebsite.jpeg" alt="Logo Workspace" class="logo-icon-img">
         <h1>Workspace</h1>
         <p class="auth-subtitle">Tổ chức công việc gọn gàng</p>
       </div>
@@ -63,7 +63,7 @@
             <label for="register-otp">Mã xác nhận (OTP)</label>
             <input type="text" id="register-otp" placeholder="Nhập mã 6 chữ số" required maxlength="6" style="text-align: center; font-size: 20px; letter-spacing: 4px; font-weight: bold;">
           </div>
-          <button type="submit" id="register-btn" class="btn btn-primary">Xác nhận & Đăng ký</button>
+          <button type="submit" id="register-btn" class="btn btn-primary">Xác nhận &amp; Đăng ký</button>
           <button type="button" id="btn-back-step-1" class="btn btn-ghost mt-4" style="width:100%">Quay lại sửa email</button>
         </div>
 
@@ -86,6 +86,11 @@
           <span class="user-name" id="user-name">User</span>
           <span class="user-ws">Workspace</span>
         </div>
+        <!-- Dark Mode Toggle -->
+        <button class="btn-icon dark-mode-btn" id="dark-mode-toggle" title="Đổi giao diện">
+          <svg id="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg id="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
       </div>
 
       <div class="sidebar-section">
@@ -126,9 +131,38 @@
         <div class="board-header">
           <div class="board-title-group">
             <span class="page-icon">📄</span>
-            <h2 id="page-title">Tên sổ tay</h2>
+            <div class="title-editable-wrapper">
+              <h2 id="page-title">Tên sổ tay</h2>
+              <button class="btn-icon rename-nb-btn" id="btn-rename-notebook" title="Đổi tên sổ tay">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+            </div>
           </div>
           <div class="board-actions">
+            <!-- Stats Widget -->
+            <div class="stats-widget" id="stats-widget">
+              <span class="stat-item" id="stat-pending" title="Chưa xong">
+                <span class="stat-dot dot-gray"></span>
+                <span id="stat-pending-count">0</span>
+              </span>
+              <span class="stat-sep">·</span>
+              <span class="stat-item stat-overdue" id="stat-overdue" title="Quá hạn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span id="stat-overdue-count">0</span>
+              </span>
+            </div>
+            <!-- Search -->
+            <div class="search-wrapper" id="search-wrapper">
+              <button class="btn-icon search-toggle-btn" id="search-toggle-btn" title="Tìm kiếm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+              <div class="search-input-wrapper" id="search-input-wrapper">
+                <input type="text" id="search-input" placeholder="Tìm công việc...">
+                <button class="search-clear-btn" id="search-clear-btn" style="display:none;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
             <button class="btn btn-outline" id="btn-delete-notebook" title="Xóa sổ tay này">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
