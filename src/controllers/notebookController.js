@@ -5,7 +5,7 @@ const Task = require('../models/Task');
 // @route   POST /api/notebooks
 const createNotebook = async (req, res, next) => {
   try {
-    const { title, icon, color } = req.body;
+    const { title, icon, color, folder } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
@@ -14,6 +14,7 @@ const createNotebook = async (req, res, next) => {
       user: req.user._id,
       icon: icon || '📄',
       color: color || '',
+      folder: folder || null,
     });
     res.status(201).json(notebook);
   } catch (error) {
@@ -47,7 +48,7 @@ const getNotebooks = async (req, res, next) => {
 // @route   PUT /api/notebooks/:id
 const updateNotebook = async (req, res, next) => {
   try {
-    const { title, icon, color } = req.body;
+    const { title, icon, color, folder } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
@@ -67,6 +68,7 @@ const updateNotebook = async (req, res, next) => {
     notebook.title = title.trim();
     if (icon) notebook.icon = icon;
     if (color !== undefined) notebook.color = color;
+    if (folder !== undefined) notebook.folder = folder;
     
     const updatedNotebook = await notebook.save();
     res.json(updatedNotebook);

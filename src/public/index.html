@@ -98,9 +98,14 @@
       <div class="sidebar-section">
         <div class="sidebar-header">
           <span>SỔ TAY (NOTEBOOKS)</span>
-          <button class="btn-icon" id="btn-add-notebook" title="Thêm sổ tay mới">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
+          <div style="display:flex; gap: 4px;">
+            <button class="btn-icon" id="btn-add-folder" title="Thêm thư mục mới">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button class="btn-icon" id="btn-add-notebook" title="Thêm sổ tay mới">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
         </div>
         
         <!-- Notebook List -->
@@ -258,6 +263,14 @@
         <div class="form-group">
           <input type="text" id="notebook-title" placeholder="Ví dụ: Kế hoạch Tuần, Dự án X..." required autofocus>
         </div>
+
+        <div class="form-group">
+          <label for="notebook-folder-select">Thư mục</label>
+          <select id="notebook-folder-select" class="form-control" style="width:100%; padding:8px; border-radius:var(--radius-sm); border:1px solid var(--border-medium); background:var(--bg-primary); color:var(--text-primary);">
+            <option value="">(Không có thư mục)</option>
+            <!-- Folders will be injected here -->
+          </select>
+        </div>
         
         <div class="form-group">
           <label>Chọn biểu tượng</label>
@@ -365,6 +378,28 @@
 
         <div class="modal-actions">
           <button type="submit" class="btn btn-primary" id="modal-submit">Lưu lại</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== FOLDER MODAL ========== -->
+  <div class="modal-overlay" id="folder-modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="folder-modal-title">Tạo thư mục mới</h3>
+        <button class="modal-close" id="folder-modal-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="folder-form">
+        <input type="hidden" id="folder-id">
+        <div class="form-group">
+          <input type="text" id="folder-name-input" placeholder="Tên thư mục (ví dụ: Công việc, Cá nhân...)" required autofocus style="width:100%; padding:12px; font-size:16px; border:1px solid var(--border-medium); border-radius:var(--radius-md); outline:none;">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="folder-modal-cancel">Hủy</button>
+          <button type="submit" class="btn btn-primary" id="folder-modal-submit">Lưu</button>
         </div>
       </form>
     </div>

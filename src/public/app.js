@@ -4,6 +4,7 @@ const API_URL = '/api';
 // ========== STATE ==========
 let currentUser = null;
 let notebooks = [];
+let folders = [];
 let currentNotebookId = null;
 let tasks = [];
 let editingTaskId = null;
@@ -255,6 +256,7 @@ function onLoginSuccess() {
     $('#btn-toggle-view').classList.remove('active');
   }
   
+  loadFolders();
   loadNotebooks();
   
   // Khởi động bộ đếm không hoạt động
@@ -307,6 +309,7 @@ async function loadNotebooks() {
     
     if (notebooks.length > 0) {
       if (!currentNotebookId) {
+        // Select first notebook by default
         selectNotebook(notebooks[0]._id);
       } else {
         renderNotebookList();
@@ -321,16 +324,65 @@ async function loadNotebooks() {
   }
 }
 
+async function loadFolders() {
+  try {
+    folders = await apiRequest('/folders');
+    renderNotebookList();
+  } catch (err) {
+    showToast('Lỗi tải thư mục', 'error');
+  }
+}
+
 function renderNotebookList() {
   notebookListUI.innerHTML = '';
-  notebooks.forEach(nb => {
+  
+  // 1. Render UN-FOLDERED notebooks first
+  const unfoldered = notebooks.filter(nb => !nb.folder);
+  renderNotebookItems(unfoldered, notebookListUI);
+
+  // 2. Render FOLDERS and their notebooks
+  folders.forEach(folder => {
+    const folderEl = document.createElement('div');
+    folderEl.className = `folder-item ${folder.expanded ? 'expanded' : ''}`;
+    
+    const folderNotebooks = notebooks.filter(nb => nb.folder === folder._id);
+
+    folderEl.innerHTML = `
+      <div class="folder-header" id="folder-header-${folder._id}">
+        <span class="folder-chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <span class="folder-name">${escapeHtml(folder.name)}</span>
+        <div class="folder-actions">
+           <button class="btn-icon" onclick="openFolderModal('${folder._id}', event)" title="Sửa thư mục">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+           </button>
+           <button class="btn-icon" onclick="handleDeleteFolder('${folder._id}', event)" title="Xóa thư mục">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+           </button>
+        </div>
+      </div>
+      <div class="folder-notebooks" id="folder-nb-list-${folder._id}"></div>
+    `;
+
+    // Toggle expand/collapse
+    folderEl.querySelector('.folder-header').addEventListener('click', () => toggleFolder(folder));
+
+    const container = folderEl.querySelector('.folder-notebooks');
+    renderNotebookItems(folderNotebooks, container, true);
+    
+    notebookListUI.appendChild(folderEl);
+  });
+}
+
+function renderNotebookItems(items, container, isNested = false) {
+  items.forEach(nb => {
     const li = document.createElement('li');
-    li.className = `notebook-item ${nb._id === currentNotebookId ? 'active' : ''}`;
+    li.className = `notebook-item ${nb._id === currentNotebookId ? 'active' : ''} ${isNested ? 'nested' : ''}`;
     
     // Apply custom color if active
     if (nb._id === currentNotebookId && nb.color) {
       li.style.setProperty('--nb-color', nb.color);
-      // Determine if text should be white or black based on background luminance (simple check)
       const isDark = ['#eb5757', '#9b51e0', '#2eaadc', '#27ae60'].includes(nb.color);
       li.style.setProperty('--nb-text-color', isDark ? '#ffffff' : 'var(--text-primary)');
     }
@@ -344,14 +396,23 @@ function renderNotebookList() {
     `;
     li.onclick = () => selectNotebook(nb._id);
     
-    // Double-click to open full edit modal
     li.addEventListener('dblclick', (e) => {
       e.stopPropagation();
       openNotebookModal(nb);
     });
 
-    notebookListUI.appendChild(li);
+    container.appendChild(li);
   });
+}
+
+async function toggleFolder(folder) {
+  folder.expanded = !folder.expanded;
+  renderNotebookList();
+  try {
+    await apiRequest(`/folders/${folder._id}`, 'PUT', { expanded: folder.expanded });
+  } catch (err) {
+    console.error('Lỗi lưu trạng thái thư mục', err);
+  }
 }
 
 // Đổi tên notebook inline trong sidebar dùng double-click
@@ -497,10 +558,18 @@ $('#btn-delete-notebook').addEventListener('click', async () => {
 
 // Notebook Modal
 function openNotebookModal(nb = null) {
+  // Populate folder dropdown
+  const folderSelect = $('#notebook-folder-select');
+  folderSelect.innerHTML = '<option value="">(Không có thư mục)</option>';
+  folders.forEach(f => {
+    folderSelect.innerHTML += `<option value="${f._id}">${escapeHtml(f.name)}</option>`;
+  });
+
   if (nb) {
     $('#nb-modal-title').textContent = 'Chỉnh sửa sổ tay';
     $('#notebook-id').value = nb._id;
     $('#notebook-title').value = nb.title;
+    $('#notebook-folder-select').value = nb.folder || '';
     
     // Set icon
     $('#notebook-icon').value = nb.icon || '📄';
@@ -517,6 +586,7 @@ function openNotebookModal(nb = null) {
     $('#nb-modal-title').textContent = 'Sổ tay mới';
     notebookForm.reset();
     $('#notebook-id').value = '';
+    $('#notebook-folder-select').value = '';
     $('#notebook-icon').value = '📄';
     $('#notebook-color').value = '';
     $$('.icon-opt').forEach(opt => opt.classList.toggle('selected', opt.dataset.icon === '📄'));
@@ -537,19 +607,20 @@ async function handleNotebookSubmit(e) {
   const title = $('#notebook-title').value.trim();
   const icon = $('#notebook-icon').value;
   const color = $('#notebook-color').value;
+  const folder = $('#notebook-folder-select').value || null;
 
   if (!title) return;
 
   try {
     if (id) {
       // UPDATE
-      const updated = await apiRequest(`/notebooks/${id}`, 'PUT', { title, icon, color });
+      const updated = await apiRequest(`/notebooks/${id}`, 'PUT', { title, icon, color, folder });
       const idx = notebooks.findIndex(n => n._id === id);
       if (idx !== -1) notebooks[idx] = updated;
       showToast('Đã cập nhật sổ tay');
     } else {
       // CREATE
-      const newNb = await apiRequest('/notebooks', 'POST', { title, icon, color });
+      const newNb = await apiRequest('/notebooks', 'POST', { title, icon, color, folder });
       notebooks.unshift(newNb);
       selectNotebook(newNb._id);
       showToast('Đã tạo sổ tay mới 📔');
@@ -562,7 +633,69 @@ async function handleNotebookSubmit(e) {
   }
 }
 
-// ========== SEARCH ==========
+// ========== FOLDER FUNCTIONS ==========
+function openFolderModal(folderId = null, event = null) {
+  if (event) event.stopPropagation();
+  
+  if (folderId) {
+    const folder = folders.find(f => f._id === folderId);
+    if (!folder) return;
+    $('#folder-modal-title').textContent = 'Sửa thư mục';
+    $('#folder-id').value = folder._id;
+    $('#folder-name-input').value = folder.name;
+  } else {
+    $('#folder-modal-title').textContent = 'Thư mục mới';
+    $('#folder-form').reset();
+    $('#folder-id').value = '';
+  }
+  
+  $('#folder-modal').style.display = 'flex';
+  setTimeout(() => $('#folder-name-input').focus(), 50);
+}
+
+function closeFolderModal() {
+  $('#folder-modal').style.display = 'none';
+}
+
+async function handleFolderSubmit(e) {
+  e.preventDefault();
+  const id = $('#folder-id').value;
+  const name = $('#folder-name-input').value.trim();
+  if (!name) return;
+
+  try {
+    if (id) {
+       const updated = await apiRequest(`/folders/${id}`, 'PUT', { name });
+       const idx = folders.findIndex(f => f._id === id);
+       if (idx !== -1) folders[idx] = updated;
+       showToast('Đã cập nhật thư mục');
+    } else {
+       const newFolder = await apiRequest('/folders', 'POST', { name });
+       folders.push(newFolder);
+       showToast('Đã tạo thư mục mới 📁');
+    }
+    closeFolderModal();
+    renderNotebookList();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleDeleteFolder(id, event) {
+  event.stopPropagation();
+  if (!confirm('Xóa thư mục sẽ chuyển các sổ tay bên trong ra ngoài. Bạn chắc chưa?')) return;
+  
+  try {
+    await apiRequest(`/folders/${id}`, 'DELETE');
+    folders = folders.filter(f => f._id !== id);
+    // Update local notebooks state
+    notebooks = notebooks.map(nb => nb.folder === id ? { ...nb, folder: null } : nb);
+    showToast('Đã xóa thư mục');
+    renderNotebookList();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 function openSearch() {
   $('#search-wrapper').classList.add('open');
   $('#search-input').focus();
@@ -917,9 +1050,21 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#nb-modal-cancel').addEventListener('click', closeNotebookModal);
   notebookModal.addEventListener('click', (e) => { if (e.target === notebookModal) closeNotebookModal(); });
   notebookForm.addEventListener('submit', handleNotebookSubmit);
+  
+  // Folder Modals
+  $('#btn-add-folder').addEventListener('click', () => openFolderModal());
+  $('#folder-modal-close').addEventListener('click', closeFolderModal);
+  $('#folder-modal-cancel').addEventListener('click', closeFolderModal);
+  $('#folder-form').addEventListener('submit', handleFolderSubmit);
+  $('#folder-modal').addEventListener('click', (e) => { 
+    if (e.target === $('#folder-modal')) closeFolderModal(); 
+  });
 
-  // Rename notebook header button
-  $('#btn-rename-notebook').addEventListener('click', startHeaderRename);
+  // Edit notebook header button
+  $('#btn-rename-notebook').addEventListener('click', () => {
+    const nb = notebooks.find(n => n._id === currentNotebookId);
+    if (nb) openNotebookModal(nb);
+  });
 
   // Task Modals
   $('#add-task-btn').addEventListener('click', () => openTaskModal());
@@ -977,6 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       if (taskModal.style.display === 'flex') closeTaskModal();
       else if (notebookModal.style.display === 'flex') closeNotebookModal();
+      else if ($('#folder-modal').style.display === 'flex') closeFolderModal();
       else if ($('#search-wrapper').classList.contains('open')) closeSearch();
     }
   });

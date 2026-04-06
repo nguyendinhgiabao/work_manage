@@ -495,6 +495,68 @@ a:hover {
   text-overflow: ellipsis;
 }
 
+/* ========== FOLDERS ========== */
+.folder-item {
+  margin-bottom: 4px;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition);
+  gap: 8px;
+  user-select: none;
+}
+
+.folder-header:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.folder-chevron {
+  transition: transform 0.2s ease;
+  color: var(--text-tertiary);
+}
+
+.folder-item.expanded .folder-chevron {
+  transform: rotate(90deg);
+}
+
+.folder-name {
+  flex: 1;
+}
+
+.folder-actions {
+  display: none;
+  gap: 4px;
+}
+
+.folder-header:hover .folder-actions {
+  display: flex;
+}
+
+.folder-notebooks {
+  display: none;
+  margin-left: 12px;
+  border-left: 1px solid var(--border-light);
+  padding-left: 4px;
+  margin-top: 2px;
+}
+
+.folder-item.expanded .folder-notebooks {
+  display: block;
+}
+
+.notebook-item.nested {
+  margin-left: 4px;
+}
+
 /* Rename input trong sidebar */
 .nb-item .nb-rename-input {
   flex: 1;

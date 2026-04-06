@@ -24,6 +24,11 @@ const notebookSchema = new mongoose.Schema(
       type: String,
       default: '', 
     },
+    folder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Folder',
+      default: null,
+    },
   },
   {
     timestamps: true,

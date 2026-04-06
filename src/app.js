@@ -51,6 +51,7 @@ app.use('/api/auth/send-otp', otpLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/notebooks', require('./routes/notebookRoutes'));
+app.use('/api/folders', require('./routes/folderRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
