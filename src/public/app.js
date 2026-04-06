@@ -583,10 +583,15 @@ function renderKanban() {
   let counts = { pending: 0, 'in-progress': 0, completed: 0 };
 
   tasks.forEach((task) => {
-    const el = createTaskElement(task);
-    if (task.status === 'pending') { listPending.appendChild(el); counts.pending++; }
-    else if (task.status === 'in-progress') { listInProgress.appendChild(el); counts['in-progress']++; }
-    else if (task.status === 'completed') { listCompleted.appendChild(el); counts.completed++; }
+    let index = 0;
+    if (task.status === 'pending') { index = counts.pending++; }
+    else if (task.status === 'in-progress') { index = counts['in-progress']++; }
+    else if (task.status === 'completed') { index = counts.completed++; }
+    
+    const el = createTaskElement(task, index);
+    if (task.status === 'pending') { listPending.appendChild(el); }
+    else if (task.status === 'in-progress') { listInProgress.appendChild(el); }
+    else if (task.status === 'completed') { listCompleted.appendChild(el); }
   });
 
   $('#badge-pending').textContent = counts.pending;
@@ -597,12 +602,15 @@ function renderKanban() {
   if (searchQuery) applySearch();
 }
 
-function createTaskElement(task) {
+function createTaskElement(task, index = 0) {
   const div = document.createElement('div');
   div.className = `task-item`;
   div.dataset.id = task._id;
   div.dataset.priority = task.priority;
   div.draggable = true;
+  
+  // Staggered entrance animation delay
+  div.style.animationDelay = `${index * 0.05}s`;
 
   const isLate = isOverdue(task.dueDate) && task.status !== 'completed';
   const prioLabel = { low: 'Thấp', medium: 'Thiết yếu', high: 'Gấp' };
