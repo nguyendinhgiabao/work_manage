@@ -468,6 +468,15 @@ a:hover {
   transform: scale(1.2);
 }
 
+.nb-actions {
+  display: none;
+  gap: 4px;
+}
+
+.notebook-item:hover .nb-actions {
+  display: flex;
+}
+
 .notebook-item.active::before {
   content: '';
   position: absolute;

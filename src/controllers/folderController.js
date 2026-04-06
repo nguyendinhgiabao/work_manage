@@ -1,11 +1,20 @@
-const Folder = require('../models/Folder');
 const Notebook = require('../models/Notebook');
+const User = require('../models/User');
 
 // @desc    Lấy danh sách thư mục của user
 // @route   GET /api/folders
 const getFolders = async (req, res, next) => {
   try {
-    const folders = await Folder.find({ user: req.user._id }).sort({ createdAt: 1 });
+    const folders = await Folder.find({
+      $or: [
+        { user: req.user._id },
+        { collaborators: req.user._id }
+      ]
+    })
+    .populate('user', 'name email')
+    .populate('collaborators', 'name email')
+    .sort({ createdAt: 1 });
+    
     res.json(folders);
   } catch (error) {
     next(error);
@@ -71,9 +80,65 @@ const deleteFolder = async (req, res, next) => {
   }
 };
 
+// @desc    Mời thành viên vào thư mục
+// @route   POST /api/folders/:id/invite
+const inviteMember = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Vui lòng nhập email người được mời' });
+    }
+
+    const folder = await Folder.findOne({ _id: req.params.id, user: req.user._id });
+    if (!folder) {
+      return res.status(404).json({ message: 'Không tìm thấy thư mục hoặc bạn không có quyền' });
+    }
+
+    const userToInvite = await User.findOne({ email: email.toLowerCase() });
+    if (!userToInvite) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+
+    if (userToInvite._id.equals(req.user._id)) {
+      return res.status(400).json({ message: 'Bạn không thể mời chính mình' });
+    }
+
+    if (folder.collaborators.includes(userToInvite._id)) {
+      return res.status(400).json({ message: 'Người này đã là thành viên của thư mục' });
+    }
+
+    folder.collaborators.push(userToInvite._id);
+    await folder.save();
+
+    res.json({ message: 'Đã mời thành viên vào thư mục thành công' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Xóa thành viên khỏi thư mục
+// @route   DELETE /api/folders/:id/collaborators/:userId
+const removeMember = async (req, res, next) => {
+  try {
+    const folder = await Folder.findOne({ _id: req.params.id, user: req.user._id });
+    if (!folder) {
+      return res.status(404).json({ message: 'Không tìm thấy thư mục' });
+    }
+
+    folder.collaborators = folder.collaborators.filter(id => id.toString() !== req.params.userId);
+    await folder.save();
+
+    res.json({ message: 'Đã xóa thành viên khỏi thư mục' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getFolders,
   createFolder,
   updateFolder,
   deleteFolder,
+  inviteMember,
+  removeMember,
 };

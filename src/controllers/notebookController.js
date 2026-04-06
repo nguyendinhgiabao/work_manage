@@ -1,5 +1,6 @@
 const Notebook = require('../models/Notebook');
 const Task = require('../models/Task');
+const Folder = require('../models/Folder');
 
 // @desc    Tạo sổ tay mới
 // @route   POST /api/notebooks
@@ -28,10 +29,21 @@ const User = require('../models/User');
 // @route   GET /api/notebooks
 const getNotebooks = async (req, res, next) => {
   try {
-    const notebooks = await Notebook.find({
+    // 1. Tìm các thư mục mà user có quyền truy cập (chủ sở hữu hoặc thành viên)
+    const accessibleFolders = await Folder.find({
       $or: [
         { user: req.user._id },
         { collaborators: req.user._id }
+      ]
+    });
+    const folderIds = accessibleFolders.map(f => f._id);
+
+    // 2. Tìm các sổ tay: (sở hữu) HOẶC (được chia sẻ trực tiếp) HOẶC (thuộc thư mục được chia sẻ)
+    const notebooks = await Notebook.find({
+      $or: [
+        { user: req.user._id },
+        { collaborators: req.user._id },
+        { folder: { $in: folderIds } }
       ]
     })
     .populate('user', 'name email')

@@ -4,7 +4,8 @@ const {
   getFolders,
   createFolder,
   updateFolder,
-  deleteFolder,
+  inviteMember,
+  removeMember,
 } = require('../controllers/folderController');
 const { protect } = require('../middlewares/authMiddleware');
 
@@ -14,5 +15,7 @@ router.get('/', getFolders);
 router.post('/', createFolder);
 router.put('/:id', updateFolder);
 router.delete('/:id', deleteFolder);
+router.post('/:id/invite', inviteMember);
+router.delete('/:id/collaborators/:userId', removeMember);
 
 module.exports = router;

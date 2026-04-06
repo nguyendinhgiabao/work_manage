@@ -10,6 +10,8 @@ let tasks = [];
 let editingTaskId = null;
 let draggedTaskElement = null;
 let searchQuery = '';
+let sharingType = 'notebook'; // 'notebook' or 'folder'
+let currentFolderId = null;
 let isCalendarMode = localStorage.getItem('isCalendarMode') === 'true';
 let fullCalendar = null;
 
@@ -346,20 +348,33 @@ function renderNotebookList() {
     folderEl.className = `folder-item ${folder.expanded ? 'expanded' : ''}`;
     
     const folderNotebooks = notebooks.filter(nb => nb.folder === folder._id);
+    
+    // Check if user is owner to show Share button
+    const isOwner = folder.user._id === currentUser._id;
+    const shareBtn = isOwner ? `
+      <button class="btn-icon" onclick="openFolderShareModal('${folder._id}', event)" title="Chia sẻ thư mục">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+    ` : '';
+    
+    const isShared = folder.user._id !== currentUser._id;
+    const sharedLabel = isShared ? '<span style="font-size:10px; opacity:0.7; margin-left:4px;">(Shared)</span>' : '';
 
     folderEl.innerHTML = `
       <div class="folder-header" id="folder-header-${folder._id}">
         <span class="folder-chevron">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
         </span>
-        <span class="folder-name">${escapeHtml(folder.name)}</span>
+        <span class="folder-name">${escapeHtml(folder.name)}${sharedLabel}</span>
         <div class="folder-actions">
+           ${shareBtn}
            <button class="btn-icon" onclick="openFolderModal('${folder._id}', event)" title="Sửa thư mục">
              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
            </button>
+           ${isOwner ? `
            <button class="btn-icon" onclick="handleDeleteFolder('${folder._id}', event)" title="Xóa thư mục">
              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-           </button>
+           </button>` : ''}
         </div>
       </div>
       <div class="folder-notebooks" id="folder-nb-list-${folder._id}"></div>
@@ -393,6 +408,11 @@ function renderNotebookItems(items, container, isNested = false) {
     li.innerHTML = `
       <span class="nb-icon">${nb.icon || '📄'}</span>
       <span class="nb-title">${sharedIcon}${escapeHtml(nb.title)}</span>
+      <div class="nb-actions">
+         <button class="btn-icon" onclick="handleEditNotebook('${nb._id}', event)" title="Sửa sổ tay">
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+         </button>
+      </div>
     `;
     li.onclick = () => selectNotebook(nb._id);
     
@@ -555,6 +575,132 @@ $('#btn-delete-notebook').addEventListener('click', async () => {
     showToast(err.message, 'error');
   }
 });
+
+function handleEditNotebook(id, event) {
+  if (event) event.stopPropagation();
+  const nb = notebooks.find(n => n._id === id);
+  if (nb) openNotebookModal(nb);
+}
+
+// ========== SHARING (NOTEBOOKS & FOLDERS) ==========
+function openShareModal() {
+  if (!currentNotebookId) return showToast('Chọn một sổ tay trước', 'error');
+  const nb = notebooks.find(n => n._id === currentNotebookId);
+  if (!nb) return;
+
+  sharingType = 'notebook';
+  $('#share-modal-title').textContent = 'Chia sẻ Sổ tay';
+  $('#share-modal-desc').textContent = 'Mời thành viên bằng địa chỉ Email đã đăng ký để cùng quản lý Sổ tay này.';
+  $('#share-email-input').value = '';
+  $('#share-msg').textContent = '';
+  
+  renderCollaboratorsList(nb.collaborators);
+  shareModal.style.display = 'flex';
+}
+
+function openFolderShareModal(id, event) {
+  if (event) event.stopPropagation();
+  const folder = folders.find(f => f._id === id);
+  if (!folder) return;
+
+  sharingType = 'folder';
+  currentFolderId = id;
+  $('#share-modal-title').textContent = 'Chia sẻ Thư mục';
+  $('#share-modal-desc').textContent = 'Mời thành viên vào Thư mục này. Họ sẽ thấy TẤT CẢ sổ tay bên trong thư mục.';
+  $('#share-email-input').value = '';
+  $('#share-msg').textContent = '';
+  
+  renderCollaboratorsList(folder.collaborators);
+  shareModal.style.display = 'flex';
+}
+
+function renderCollaboratorsList(collaborators) {
+  const list = $('#collaborators-modal-list');
+  list.innerHTML = '';
+
+  if (!collaborators || collaborators.length === 0) {
+    list.innerHTML = '<li style="font-size:13px; color:var(--text-tertiary); text-align:center;">Chưa có thành viên nào</li>';
+    return;
+  }
+
+  collaborators.forEach(user => {
+    const li = document.createElement('li');
+    li.style = 'display:flex; align-items:center; justify-content:space-between;';
+    li.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:30px; height:30px; border-radius:50%; background:var(--accent-primary); color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">
+          ${user.name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600;">${escapeHtml(user.name)}</div>
+          <div style="font-size:11px; color:var(--text-tertiary);">${escapeHtml(user.email)}</div>
+        </div>
+      </div>
+      <button class="btn-icon" onclick="handleRemoveMember('${user._id}')" title="Xóa thành viên">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function closeShareModal() {
+  shareModal.style.display = 'none';
+}
+
+async function handleInviteUser(e) {
+  e.preventDefault();
+  const email = $('#share-email-input').value.trim();
+  if (!email) return;
+
+  const endpoint = sharingType === 'folder' 
+    ? `/folders/${currentFolderId}/invite` 
+    : `/notebooks/${currentNotebookId}/invite`;
+
+  try {
+    const res = await apiRequest(endpoint, 'POST', { email });
+    showToast(res.message);
+    
+    // Refresh local list
+    if (sharingType === 'folder') {
+      await loadFolders();
+      const folder = folders.find(f => f._id === currentFolderId);
+      renderCollaboratorsList(folder.collaborators);
+    } else {
+      await loadNotebooks();
+      const nb = notebooks.find(n => n._id === currentNotebookId);
+      renderCollaboratorsList(nb.collaborators);
+    }
+    $('#share-email-input').value = '';
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleRemoveMember(userId) {
+  if (!confirm('Xóa thành viên này?')) return;
+
+  const endpoint = sharingType === 'folder'
+    ? `/folders/${currentFolderId}/collaborators/${userId}`
+    : `/notebooks/${currentNotebookId}/collaborators/${userId}`;
+
+  try {
+    await apiRequest(endpoint, 'DELETE');
+    showToast('Đã xóa thành viên');
+
+    if (sharingType === 'folder') {
+      await loadFolders();
+      const folder = folders.find(f => f._id === currentFolderId);
+      renderCollaboratorsList(folder.collaborators);
+    } else {
+      await loadNotebooks();
+      const nb = notebooks.find(n => n._id === currentNotebookId);
+      renderCollaboratorsList(nb.collaborators);
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 
 // Notebook Modal
 function openNotebookModal(nb = null) {
@@ -1254,12 +1400,12 @@ function openShareModal() {
 
 function renderCollaborators(notebook) {
   const container = $('#collaborators-list');
-  if (!container) return; // Bảo vệ nếu DOM chưa sẵn sàng
+  if (!container) return; 
   container.innerHTML = '';
   
   // Owner first
-  const ownerInitial = (notebook.user.name || 'U').charAt(0).toUpperCase();
-  container.innerHTML += `<div class="user-avatar" style="width:24px; height:24px; font-size:10px; border:2px solid var(--primary-color)" title="Chủ sở hữu: ${notebook.user.name}">${ownerInitial}</div>`;
+  const ownerInitial = ((notebook.user && notebook.user.name) || 'U').charAt(0).toUpperCase();
+  container.innerHTML += `<div class="user-avatar" style="width:24px; height:24px; font-size:10px; border:2px solid var(--primary-color)" title="Chủ sở hữu: ${notebook.user ? notebook.user.name : 'Unknown'}">${ownerInitial}</div>`;
 
   // Then collaborators
   if (notebook.collaborators) {
@@ -1267,83 +1413,5 @@ function renderCollaborators(notebook) {
       const initial = (col.name || 'U').charAt(0).toUpperCase();
       container.innerHTML += `<div class="user-avatar" style="width:24px; height:24px; font-size:10px; margin-left:-8px;" title="${col.name}">${initial}</div>`;
     });
-  }
-}
-
-function closeShareModal() {
-  shareModal.style.display = 'none';
-}
-
-function renderCollaboratorsList(notebook) {
-  const list = $('#collaborators-modal-list');
-  list.innerHTML = '';
-  
-  // Owner
-  list.innerHTML += `
-    <li style="display:flex; align-items:center; justify-content:space-between;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div class="user-avatar" style="width:32px; height:32px; font-size:14px;">${notebook.user.name.charAt(0).toUpperCase()}</div>
-        <div>
-          <div style="font-size:14px; font-weight:500;">${escapeHtml(notebook.user.name)} (Bạn)</div>
-          <div style="font-size:12px; color:var(--text-secondary);">Chủ sở hữu</div>
-        </div>
-      </div>
-    </li>
-  `;
-
-  // Others
-  if (notebook.collaborators) {
-    notebook.collaborators.forEach(col => {
-      list.innerHTML += `
-        <li style="display:flex; align-items:center; justify-content:space-between;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div class="user-avatar" style="width:32px; height:32px; font-size:14px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-light)">${col.name.charAt(0).toUpperCase()}</div>
-            <div>
-              <div style="font-size:14px; font-weight:500;">${escapeHtml(col.name)}</div>
-              <div style="font-size:12px; color:var(--text-secondary);">${escapeHtml(col.email)}</div>
-            </div>
-          </div>
-          <button class="btn-icon" style="color:var(--danger-color)" onclick="handleRemoveMember('${col._id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </li>
-      `;
-    });
-  }
-}
-
-async function handleInviteUser(e) {
-  e.preventDefault();
-  const email = $('#share-email-input').value.trim();
-  const msgEl = $('#share-msg');
-
-  try {
-    const res = await apiRequest(`/notebooks/${currentNotebookId}/invite`, 'POST', { email });
-    showToast(res.message);
-    msgEl.textContent = res.message;
-    msgEl.style.color = 'var(--success-color)';
-    
-    // Refresh notebook data and UI
-    await loadNotebooks();
-    const updatedNb = notebooks.find(n => n._id === currentNotebookId);
-    renderCollaboratorsList(updatedNb);
-    renderCollaborators(updatedNb);
-  } catch (err) {
-    msgEl.textContent = err.message;
-    msgEl.style.color = 'var(--danger-color)';
-  }
-}
-
-async function handleRemoveMember(userId) {
-  if (!confirm('Xóa thành viên này khỏi sổ tay?')) return;
-  try {
-    const res = await apiRequest(`/notebooks/${currentNotebookId}/collaborators/${userId}`, 'DELETE');
-    showToast(res.message);
-    await loadNotebooks();
-    const updatedNb = notebooks.find(n => n._id === currentNotebookId);
-    renderCollaboratorsList(updatedNb);
-    renderCollaborators(updatedNb);
-  } catch (err) {
-    showToast(err.message, 'error');
   }
 }
