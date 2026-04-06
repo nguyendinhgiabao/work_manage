@@ -327,19 +327,27 @@ function renderNotebookList() {
     const li = document.createElement('li');
     li.className = `notebook-item ${nb._id === currentNotebookId ? 'active' : ''}`;
     
+    // Apply custom color if active
+    if (nb._id === currentNotebookId && nb.color) {
+      li.style.setProperty('--nb-color', nb.color);
+      // Determine if text should be white or black based on background luminance (simple check)
+      const isDark = ['#eb5757', '#9b51e0', '#2eaadc', '#27ae60'].includes(nb.color);
+      li.style.setProperty('--nb-text-color', isDark ? '#ffffff' : 'var(--text-primary)');
+    }
+
     const isShared = nb.user._id !== currentUser._id;
     const sharedIcon = isShared ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' : '';
 
     li.innerHTML = `
-      <span class="nb-icon">📄</span>
+      <span class="nb-icon">${nb.icon || '📄'}</span>
       <span class="nb-title">${sharedIcon}${escapeHtml(nb.title)}</span>
     `;
     li.onclick = () => selectNotebook(nb._id);
     
-    // Double-click trên tên để đổi tên inline trong sidebar
+    // Double-click to open full edit modal
     li.addEventListener('dblclick', (e) => {
       e.stopPropagation();
-      startInlineSidebarRename(li, nb);
+      openNotebookModal(nb);
     });
 
     notebookListUI.appendChild(li);
@@ -432,6 +440,18 @@ function selectNotebook(id) {
   if (!notebook) return;
 
   $('#page-title').textContent = notebook.title;
+  $('.page-icon').textContent = notebook.icon || '📄';
+  
+  // Style header if color exists
+  const header = $('.board-header');
+  if (notebook.color) {
+     header.style.borderLeft = `4px solid ${notebook.color}`;
+     header.style.paddingLeft = '12px';
+  } else {
+     header.style.borderLeft = 'none';
+     header.style.paddingLeft = '0';
+  }
+
   emptyWorkspace.style.display = 'none';
   notebookWorkspace.style.display = 'block';
 
@@ -476,10 +496,33 @@ $('#btn-delete-notebook').addEventListener('click', async () => {
 });
 
 // Notebook Modal
-function openNotebookModal() {
-  $('#nb-modal-title').textContent = 'Sổ tay mới';
-  notebookForm.reset();
-  $('#notebook-id').value = '';
+function openNotebookModal(nb = null) {
+  if (nb) {
+    $('#nb-modal-title').textContent = 'Chỉnh sửa sổ tay';
+    $('#notebook-id').value = nb._id;
+    $('#notebook-title').value = nb.title;
+    
+    // Set icon
+    $('#notebook-icon').value = nb.icon || '📄';
+    $$('.icon-opt').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.icon === (nb.icon || '📄'));
+    });
+
+    // Set color
+    $('#notebook-color').value = nb.color || '';
+    $$('.color-opt').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.color === (nb.color || ''));
+    });
+  } else {
+    $('#nb-modal-title').textContent = 'Sổ tay mới';
+    notebookForm.reset();
+    $('#notebook-id').value = '';
+    $('#notebook-icon').value = '📄';
+    $('#notebook-color').value = '';
+    $$('.icon-opt').forEach(opt => opt.classList.toggle('selected', opt.dataset.icon === '📄'));
+    $$('.color-opt').forEach(opt => opt.classList.toggle('selected', opt.dataset.color === ''));
+  }
+  
   notebookModal.style.display = 'flex';
   setTimeout(() => $('#notebook-title').focus(), 50);
 }
@@ -490,15 +533,30 @@ function closeNotebookModal() {
 
 async function handleNotebookSubmit(e) {
   e.preventDefault();
+  const id = $('#notebook-id').value;
   const title = $('#notebook-title').value.trim();
+  const icon = $('#notebook-icon').value;
+  const color = $('#notebook-color').value;
+
   if (!title) return;
 
   try {
-    const newNb = await apiRequest('/notebooks', 'POST', { title });
-    notebooks.unshift(newNb);
+    if (id) {
+      // UPDATE
+      const updated = await apiRequest(`/notebooks/${id}`, 'PUT', { title, icon, color });
+      const idx = notebooks.findIndex(n => n._id === id);
+      if (idx !== -1) notebooks[idx] = updated;
+      showToast('Đã cập nhật sổ tay');
+    } else {
+      // CREATE
+      const newNb = await apiRequest('/notebooks', 'POST', { title, icon, color });
+      notebooks.unshift(newNb);
+      selectNotebook(newNb._id);
+      showToast('Đã tạo sổ tay mới 📔');
+    }
     closeNotebookModal();
-    selectNotebook(newNb._id);
-    showToast('Đã tạo sổ tay mới 📔');
+    renderNotebookList();
+    if (id && currentNotebookId === id) selectNotebook(id);
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -806,6 +864,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dark mode
   initDarkMode();
   $('#dark-mode-toggle').addEventListener('click', toggleDarkMode);
+
+  // Notebook Modal Icon Selector
+  $$('.icon-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      $$('.icon-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      $('#notebook-icon').value = opt.dataset.icon;
+    });
+  });
+
+  // Notebook Modal Color Selector
+  $$('.color-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      $$('.color-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      $('#notebook-color').value = opt.dataset.color;
+    });
+  });
 
   // Auth Toggles
   $('#show-register').addEventListener('click', (e) => {

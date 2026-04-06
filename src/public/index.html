@@ -258,6 +258,36 @@
         <div class="form-group">
           <input type="text" id="notebook-title" placeholder="Ví dụ: Kế hoạch Tuần, Dự án X..." required autofocus>
         </div>
+        
+        <div class="form-group">
+          <label>Chọn biểu tượng</label>
+          <div class="icon-selector" id="nb-icon-selector">
+            <span class="icon-opt selected" data-icon="📄">📄</span>
+            <span class="icon-opt" data-icon="🗓️">🗓️</span>
+            <span class="icon-opt" data-icon="💡">💡</span>
+            <span class="icon-opt" data-icon="🏷️">🏷️</span>
+            <span class="icon-opt" data-icon="🚀">🚀</span>
+            <span class="icon-opt" data-icon="🏠">🏠</span>
+            <span class="icon-opt" data-icon="🛠️">🛠️</span>
+            <span class="icon-opt" data-icon="🎯">🎯</span>
+          </div>
+          <input type="hidden" id="notebook-icon" value="📄">
+        </div>
+
+        <div class="form-group">
+          <label>Chọn màu sắc</label>
+          <div class="color-selector" id="nb-color-selector">
+            <span class="color-opt selected" data-color="" style="background: var(--bg-sidebar); border: 1px solid var(--border-medium);"></span>
+            <span class="color-opt" data-color="#eb5757" style="background: #eb5757;"></span>
+            <span class="color-opt" data-color="#f2994a" style="background: #f2994a;"></span>
+            <span class="color-opt" data-color="#f2c94c" style="background: #f2c94c;"></span>
+            <span class="color-opt" data-color="#27ae60" style="background: #27ae60;"></span>
+            <span class="color-opt" data-color="#2eaadc" style="background: #2eaadc;"></span>
+            <span class="color-opt" data-color="#9b51e0" style="background: #9b51e0;"></span>
+            <span class="color-opt" data-color="#ff9ff3" style="background: #ff9ff3;"></span>
+          </div>
+          <input type="hidden" id="notebook-color" value="">
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="nb-modal-cancel">Hủy</button>
           <button type="submit" class="btn btn-primary" id="nb-modal-submit">Lưu</button>

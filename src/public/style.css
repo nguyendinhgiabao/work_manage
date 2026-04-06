@@ -458,10 +458,14 @@ a:hover {
 }
 
 .notebook-item.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: var(--nb-color, var(--bg-card));
+  color: var(--nb-text-color, var(--text-primary));
   font-weight: 600;
   box-shadow: var(--shadow-sm);
+}
+
+.notebook-item.active .nb-icon {
+  transform: scale(1.2);
 }
 
 .notebook-item.active::before {
@@ -1057,10 +1061,47 @@ a:hover {
 }
 .property-value:hover { background: var(--bg-hover); }
 
+/* Icon & Color Selectors in Modal */
+.icon-selector, .color-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.icon-opt, .color-opt {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: var(--transition-pop);
+  border: 2px solid transparent;
+}
+
+.icon-opt:hover, .color-opt:hover {
+  transform: scale(1.1);
+}
+
+.icon-opt.selected {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.color-opt.selected {
+  border-color: var(--text-primary);
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-primary);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: 24px;
 }
 
 /* ========== TOAST ========== */
