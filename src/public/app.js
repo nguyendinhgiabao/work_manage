@@ -12,6 +12,7 @@ let draggedTaskElement = null;
 let searchQuery = '';
 let sharingType = 'notebook'; // 'notebook' or 'folder'
 let currentFolderId = null;
+let draggedNotebookId = null;
 let isCalendarMode = localStorage.getItem('isCalendarMode') === 'true';
 let fullCalendar = null;
 
@@ -383,11 +384,47 @@ function renderNotebookList() {
     // Toggle expand/collapse
     folderEl.querySelector('.folder-header').addEventListener('click', () => toggleFolder(folder));
 
+    // Drop target for notebooks
+    const folderHeader = folderEl.querySelector('.folder-header');
+    folderHeader.addEventListener('dragover', (e) => {
+      if (draggedNotebookId) {
+        e.preventDefault();
+        folderHeader.classList.add('drag-over');
+      }
+    });
+    folderHeader.addEventListener('dragleave', () => folderHeader.classList.remove('drag-over'));
+    folderHeader.addEventListener('drop', (e) => {
+      if (draggedNotebookId) {
+        e.preventDefault();
+        folderHeader.classList.remove('drag-over');
+        handleNotebookDrop(draggedNotebookId, folder._id);
+      }
+    });
+
     const container = folderEl.querySelector('.folder-notebooks');
     renderNotebookItems(folderNotebooks, container, true);
     
     notebookListUI.appendChild(folderEl);
   });
+
+  // Root drop target (Uncategorized)
+  const sidebarHeader = $('.sidebar-header');
+  if (sidebarHeader) {
+    sidebarHeader.addEventListener('dragover', (e) => {
+      if (draggedNotebookId) {
+        e.preventDefault();
+        sidebarHeader.classList.add('drag-over');
+      }
+    });
+    sidebarHeader.addEventListener('dragleave', () => sidebarHeader.classList.remove('drag-over'));
+    sidebarHeader.addEventListener('drop', (e) => {
+      if (draggedNotebookId) {
+        e.preventDefault();
+        sidebarHeader.classList.remove('drag-over');
+        handleNotebookDrop(draggedNotebookId, null);
+      }
+    });
+  }
 }
 
 function renderNotebookItems(items, container, isNested = false) {
@@ -414,6 +451,21 @@ function renderNotebookItems(items, container, isNested = false) {
          </button>
       </div>
     `;
+    
+    // Drag and Drop
+    li.draggable = true;
+    li.dataset.id = nb._id;
+    li.addEventListener('dragstart', (e) => {
+      draggedNotebookId = nb._id;
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('dragging');
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      draggedNotebookId = null;
+      $$('.folder-header, .sidebar-header').forEach(el => el.classList.remove('drag-over'));
+    });
+
     li.onclick = () => selectNotebook(nb._id);
     
     li.addEventListener('dblclick', (e) => {
@@ -537,7 +589,9 @@ function selectNotebook(id) {
   notebookWorkspace.style.display = 'block';
 
   // Toggle Share button based on ownership
-  const isOwner = notebook.user._id === currentUser._id;
+  const ownerId = (notebook.user && notebook.user._id) ? notebook.user._id : notebook.user;
+  const isOwner = ownerId === currentUser._id;
+  
   $('#btn-share-notebook').style.display = isOwner ? 'block' : 'none';
   $('#btn-delete-notebook').style.display = isOwner ? 'block' : 'none';
 
@@ -653,6 +707,14 @@ async function handleInviteUser(e) {
   const email = $('#share-email-input').value.trim();
   if (!email) return;
 
+  // Guard against undefined IDs
+  if (sharingType === 'folder' && (!currentFolderId || currentFolderId === 'undefined')) {
+    return showToast('Lỗi: Không tìm thấy ID thư mục', 'error');
+  }
+  if (sharingType === 'notebook' && (!currentNotebookId || currentNotebookId === 'undefined')) {
+    return showToast('Lỗi: Không tìm thấy ID sổ tay', 'error');
+  }
+
   const endpoint = sharingType === 'folder' 
     ? `/folders/${currentFolderId}/invite` 
     : `/notebooks/${currentNotebookId}/invite`;
@@ -679,6 +741,14 @@ async function handleInviteUser(e) {
 
 async function handleRemoveMember(userId) {
   if (!confirm('Xóa thành viên này?')) return;
+
+  // Guard against undefined IDs
+  if (sharingType === 'folder' && (!currentFolderId || currentFolderId === 'undefined')) {
+    return showToast('Lỗi: Không tìm thấy ID thư mục', 'error');
+  }
+  if (sharingType === 'notebook' && (!currentNotebookId || currentNotebookId === 'undefined')) {
+    return showToast('Lỗi: Không tìm thấy ID sổ tay', 'error');
+  }
 
   const endpoint = sharingType === 'folder'
     ? `/folders/${currentFolderId}/collaborators/${userId}`
@@ -1396,6 +1466,26 @@ function openShareModal() {
   
   renderCollaboratorsList(notebook);
   shareModal.style.display = 'flex';
+}
+
+async function handleNotebookDrop(nbId, folderId) {
+  // Safe check
+  if (!nbId || nbId === 'undefined') {
+    console.error('Drag drop error: nbId is undefined');
+    return;
+  }
+  
+  try {
+    const updated = await apiRequest(`/notebooks/${nbId}`, 'PUT', { folder: folderId });
+    // Update local state
+    const idx = notebooks.findIndex(n => n._id === nbId);
+    if (idx !== -1) notebooks[idx] = updated;
+    
+    showToast(`Đã di chuyển sổ tay 📔`);
+    renderNotebookList();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 function renderCollaborators(notebook) {

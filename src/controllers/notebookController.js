@@ -10,13 +10,13 @@ const createNotebook = async (req, res, next) => {
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
-    const notebook = await Notebook.create({
+    const notebook = await (await Notebook.create({
       title: title.trim(),
       user: req.user._id,
       icon: icon || '📄',
       color: color || '',
       folder: folder || null,
-    });
+    })).populate('user', 'name email');
     res.status(201).json(notebook);
   } catch (error) {
     next(error);
@@ -83,6 +83,7 @@ const updateNotebook = async (req, res, next) => {
     if (folder !== undefined) notebook.folder = folder;
     
     const updatedNotebook = await notebook.save();
+    await updatedNotebook.populate('user', 'name email');
     res.json(updatedNotebook);
   } catch (error) {
     next(error);

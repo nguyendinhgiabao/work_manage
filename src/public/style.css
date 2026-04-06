@@ -464,6 +464,12 @@ a:hover {
   box-shadow: var(--shadow-sm);
 }
 
+.notebook-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
 .notebook-item.active .nb-icon {
   transform: scale(1.2);
 }
@@ -521,6 +527,18 @@ a:hover {
   transition: var(--transition);
   gap: 8px;
   user-select: none;
+}
+
+.folder-header.drag-over {
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+  transform: scale(1.02);
+}
+
+.sidebar-header.drag-over {
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
 }
 
 .folder-header:hover {
