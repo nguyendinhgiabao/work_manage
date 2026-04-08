@@ -26,7 +26,6 @@ const createNotebook = async (req, res, next) => {
   }
 };
 
-const User = require('../models/User');
 
 // @desc    Lấy danh sách sổ tay của user (bao gồm cả sổ tay được chia sẻ)
 // @route   GET /api/notebooks
