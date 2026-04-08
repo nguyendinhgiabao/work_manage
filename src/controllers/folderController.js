@@ -29,10 +29,12 @@ const createFolder = async (req, res, next) => {
     if (!name || !name.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên thư mục' });
     }
-    const folder = await Folder.create({
+    const folder = new Folder({
       name: name.trim(),
       user: req.user._id,
     });
+    await folder.save();
+    await folder.populate('user', 'name email');
     res.status(201).json(folder);
   } catch (error) {
     next(error);
@@ -54,6 +56,7 @@ const updateFolder = async (req, res, next) => {
     if (expanded !== undefined) folder.expanded = expanded;
 
     const updatedFolder = await folder.save();
+    await updatedFolder.populate('user', 'name email');
     res.json(updatedFolder);
   } catch (error) {
     next(error);

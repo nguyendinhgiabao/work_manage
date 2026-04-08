@@ -351,14 +351,15 @@ function renderNotebookList() {
     const folderNotebooks = notebooks.filter(nb => nb.folder === folder._id);
     
     // Check if user is owner to show Share button
-    const isOwner = folder.user._id === currentUser._id;
+    const ownerId = (folder.user && folder.user._id) ? folder.user._id : folder.user;
+    const isOwner = ownerId === currentUser._id;
     const shareBtn = isOwner ? `
       <button class="btn-icon" onclick="openFolderShareModal('${folder._id}', event)" title="Chia sẻ thư mục">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </button>
     ` : '';
     
-    const isShared = folder.user._id !== currentUser._id;
+    const isShared = ownerId !== currentUser._id;
     const sharedLabel = isShared ? '<span style="font-size:10px; opacity:0.7; margin-left:4px;">(Shared)</span>' : '';
 
     folderEl.innerHTML = `
@@ -439,7 +440,8 @@ function renderNotebookItems(items, container, isNested = false) {
       li.style.setProperty('--nb-text-color', isDark ? '#ffffff' : 'var(--text-primary)');
     }
 
-    const isShared = nb.user._id !== currentUser._id;
+    const ownerId = (nb.user && nb.user._id) ? nb.user._id : nb.user;
+    const isShared = ownerId !== currentUser._id;
     const sharedIcon = isShared ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' : '';
 
     li.innerHTML = `
