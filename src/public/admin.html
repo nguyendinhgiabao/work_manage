@@ -16,8 +16,9 @@
     <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
       <button class="btn btn-outline" id="btn-back-home" style="padding: 6px 12px; font-size: 13px;">Trang chủ</button>
       <div id="admin-user-info" class="user-info-text">
-        <span class="user-name" style="font-weight: 600;">Admin</span>
+        <span class="user-name" id="admin-user-display-name" style="font-weight: 600;">Admin</span>
       </div>
+      <button class="btn btn-outline" id="profile-btn" style="padding: 6px 12px; font-size: 13px;">Tài khoản</button>
       <button class="btn-sidebar btn-logout" id="logout-btn" style="width: auto; padding: 6px 12px; font-size: 13px;">Đăng xuất</button>
       <button class="btn-icon dark-mode-btn" id="dark-mode-toggle" title="Đổi giao diện">
         <svg id="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -205,6 +206,74 @@
           <button class="btn btn-ghost" id="reset-pwd-cancel">Hủy</button>
           <button class="btn btn-primary" id="reset-pwd-submit">Xác nhận Đổi</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PREMIUM PROFILE MODAL ========== -->
+  <div class="modal-overlay premium-modal" id="profile-modal" style="display:none; z-index:9999;">
+    <div class="modal-card premium-card">
+      <!-- Modal Sidebar -->
+      <div class="modal-sidebar">
+        <div>
+          <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <h2>Hồ sơ</h2>
+          <p>Quản lý thông tin quản trị và mật khẩu của bạn.</p>
+        </div>
+        <div style="font-size: 12px; opacity: 0.6; line-height: 1.5;">
+          Hệ thống bảo mật bởi<br>Work Management v2.0
+        </div>
+      </div>
+
+      <!-- Modal Main Content -->
+      <div class="modal-main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+          <h3 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">Tài khoản Quản trị</h3>
+          <button class="modal-close" id="profile-modal-close" style="position: relative; top: 0; right: 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <form id="profile-form">
+          <div class="premium-form-group">
+            <label>Tên hiển thị</label>
+            <div class="premium-input-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="profile-name-input" class="premium-input" placeholder="Họ và tên của bạn" required>
+            </div>
+          </div>
+
+          <div style="height: 1px; background: var(--border-color); margin: 30px 0;"></div>
+          
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 20px; display: flex; align-items: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Thay đổi mật khẩu
+          </h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="premium-form-group">
+              <label>Mật khẩu hiện tại</label>
+              <div class="premium-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <input type="password" id="profile-old-pwd" class="premium-input" placeholder="••••••••">
+              </div>
+            </div>
+            <div class="premium-form-group">
+              <label>Mật khẩu mới</label>
+              <div class="premium-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3-3.5 3.5z"/></svg>
+                <input type="password" id="profile-new-pwd" class="premium-input" placeholder="Tối thiểu 6 ký tự">
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-btn-group">
+            <button type="button" class="premium-btn-cancel" id="profile-modal-cancel">Hủy bỏ</button>
+            <button type="submit" class="premium-btn-save">Lưu thay đổi</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

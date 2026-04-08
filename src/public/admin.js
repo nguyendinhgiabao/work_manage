@@ -18,6 +18,7 @@ let currentLimit = 10;
 let searchQuery = '';
 let currentTotalPages = 1;
 let selectedUserId = null;
+let adminUser = null; // To store current admin's own info
 
 // Helpers
 const getToken = () => localStorage.getItem('token');
@@ -84,11 +85,56 @@ async function loadAdminData() {
 
     await loadUsers();
     await loadLogs();
+    
+    // Load admin's own profile for the Profile Modal
+    adminUser = await adminApiRequest('/auth/profile');
+    $('#admin-user-display-name').textContent = adminUser.name;
 
     loadingView.style.display = 'none';
     contentView.style.display = 'block';
   } catch (error) {
     console.error(error);
+  }
+}
+
+// ========== ADMIN PROFILE FUNCTIONS ==========
+function openAdminProfileModal() {
+  if (!adminUser) return;
+  $('#profile-name-input').value = adminUser.name;
+  $('#profile-old-pwd').value = '';
+  $('#profile-new-pwd').value = '';
+  $('#profile-modal').style.display = 'flex';
+}
+
+function closeAdminProfileModal() {
+  $('#profile-modal').style.display = 'none';
+}
+
+async function handleUpdateAdminProfile(e) {
+  e.preventDefault();
+  const name = $('#profile-name-input').value.trim();
+  const currentPassword = $('#profile-old-pwd').value;
+  const newPassword = $('#profile-new-pwd').value;
+
+  if (!name) return showToast('Tên không được để trống', 'error');
+  
+  const body = { name };
+  if (newPassword) {
+    if (!currentPassword) return showToast('Nhập mật khẩu cũ để đổi mật khẩu mới', 'error');
+    if (newPassword.length < 6) return showToast('Mật khẩu mới từ 6 ký tự', 'error');
+    body.currentPassword = currentPassword;
+    body.newPassword = newPassword;
+  }
+
+  try {
+    const data = await adminApiRequest('/auth/profile', 'PUT', body);
+    adminUser = { ...adminUser, ...data };
+    $('#admin-user-display-name').textContent = adminUser.name;
+    
+    showToast(data.message || 'Cập nhật thành công');
+    closeAdminProfileModal();
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 
@@ -474,6 +520,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Refresh Logs
   $('#btn-refresh-logs').addEventListener('click', loadLogs);
 
+  // Admin Profile Modal
+  $('#profile-btn').onclick = openAdminProfileModal;
+  $('#profile-modal-close').onclick = closeAdminProfileModal;
+  $('#profile-modal-cancel').onclick = closeAdminProfileModal;
+  $('#profile-form').onsubmit = handleUpdateAdminProfile;
+
   // Admin Reset Password Modal
   $('#reset-pwd-close').onclick = closeResetPwdModal;
   $('#reset-pwd-cancel').onclick = closeResetPwdModal;
@@ -481,8 +533,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ESC to close reset modal
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && $('#reset-password-modal').style.display === 'flex') {
-      closeResetPwdModal();
+    if (e.key === 'Escape') {
+      if ($('#reset-password-modal').style.display === 'flex') closeResetPwdModal();
+      if ($('#profile-modal').style.display === 'flex') closeAdminProfileModal();
     }
   });
 });

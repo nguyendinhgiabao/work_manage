@@ -185,21 +185,36 @@ const broadcastEmail = async (req, res, next) => {
     const users = await User.find({ status: 'active' }).select('email');
     if (users.length === 0) return res.status(400).json({ message: 'Không có người dùng active nào để gửi' });
 
-    const emails = users.map(u => u.email).join(',');
+    const emails = users.map(u => u.email);
+    
+    // Đảm bảo có EMAIL_USER để làm người gửi và người nhận chính (To)
+    const adminEmail = process.env.EMAIL_USER;
+    if (!adminEmail) {
+      console.error('LỖI CRITICAL: process.env.EMAIL_USER chưa được cấu hình!');
+      return res.status(500).json({ message: 'Lỗi cấu hình hệ thống Email (EMAIL_USER missing)' });
+    }
 
     const mailOptions = {
-      from: `"Sổ Tay Kanban" <${process.env.EMAIL_USER}>`,
-      bcc: emails, // dùng bcc để bảo mật danh sách email
+      from: `"Sổ Tay Kanban" <${adminEmail}>`,
+      to: adminEmail, // Gửi cho chính mình
+      bcc: emails,    // Ẩn danh sách người nhận khác
       subject: subject,
       html: html
     };
 
+    console.log(`Đang gửi Broadcast tới ${users.length} người dùng...`);
     await transporter.sendMail(mailOptions);
+    
     await createLog('BROADCAST_EMAIL', req.user._id, null, `Gửi thông báo: ${subject}`);
 
     res.json({ message: `Đã phát thông báo thành công tới ${users.length} người dùng` });
   } catch (error) {
-    next(error);
+    console.error('LỖI GỬI BROADCAST:', error);
+    // Trả về lỗi chi tiết hơn thay vì chỉ 500 chung chung nếu có thể
+    res.status(500).json({ 
+      message: 'Lỗi khi gửi email. Hãy kiểm tra cấu hình SMTP hoặc hạn ngạch gửi mail.',
+      error: error.message 
+    });
   }
 };
 
