@@ -46,6 +46,7 @@ const listInProgress = $('#list-in-progress');
 const listCompleted = $('#list-completed');
 
 // Modals
+const notebookModal = $('#notebook-modal');
 const notebookForm = $('#notebook-form');
 const profileModal = $('#profile-modal');
 const profileForm = $('#profile-form');
