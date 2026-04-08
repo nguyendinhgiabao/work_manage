@@ -774,6 +774,8 @@ async function handleRemoveMember(userId) {
 
 // Notebook Modal
 function openNotebookModal(nb = null) {
+  if (nb instanceof Event) nb = null; // Safety check
+  
   // Populate folder dropdown
   const folderSelect = $('#notebook-folder-select');
   folderSelect.innerHTML = '<option value="">(Không có thư mục)</option>';
@@ -1260,8 +1262,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Notebook Modals
-  $('#btn-add-notebook').addEventListener('click', openNotebookModal);
-  $('#btn-create-first-notebook').addEventListener('click', openNotebookModal);
+  $('#btn-add-notebook').addEventListener('click', () => openNotebookModal());
+  $('#btn-create-first-notebook').addEventListener('click', () => openNotebookModal());
   $('#nb-modal-close').addEventListener('click', closeNotebookModal);
   $('#nb-modal-cancel').addEventListener('click', closeNotebookModal);
   notebookModal.addEventListener('click', (e) => { if (e.target === notebookModal) closeNotebookModal(); });

@@ -10,13 +10,15 @@ const createNotebook = async (req, res, next) => {
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
-    const notebook = await (await Notebook.create({
+    const notebook = new Notebook({
       title: title.trim(),
       user: req.user._id,
       icon: icon || '📄',
       color: color || '',
       folder: folder || null,
-    })).populate('user', 'name email');
+    });
+    await notebook.save();
+    await notebook.populate('user', 'name email');
     res.status(201).json(notebook);
   } catch (error) {
     next(error);
