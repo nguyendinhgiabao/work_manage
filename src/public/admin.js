@@ -248,9 +248,7 @@ function renderUsers(users) {
       <td>${formatDate(user.createdAt)}</td>
       <td style="text-align: right;">
         ${user.role !== 'admin' ? `
-          <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;" onclick="openResetPwdModal('${user._id}', '${escapeHtml(user.name)}', '${escapeHtml(user.email)}')">
-            Mật khẩu
-          </button>
+
           <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;" onclick="handleToggleStatus('${user._id}', '${escapeHtml(user.name)}')">
             ${btnBlockText}
           </button>
@@ -289,42 +287,7 @@ window.handleToggleStatus = async function(id, name) {
   }
 };
 
-window.openResetPwdModal = function(id, name, email) {
-  selectedUserId = id;
-  $('#reset-pwd-user-info').innerHTML = `Người dùng: <strong>${name}</strong> (${email})`;
-  $('#reset-pwd-input').value = '';
-  $('#reset-password-modal').style.display = 'flex';
-};
 
-window.closeResetPwdModal = function() {
-  $('#reset-password-modal').style.display = 'none';
-  selectedUserId = null;
-};
-
-window.handleForceResetPassword = async function() {
-  const newPassword = $('#reset-pwd-input').value.trim();
-  if(!newPassword || newPassword.length < 6) {
-    return showToast('Mật khẩu tối thiểu 6 ký tự', 'error');
-  }
-
-  try {
-    const btn = $('#reset-pwd-submit');
-    btn.disabled = true;
-    btn.textContent = 'Đang đổi...';
-    
-    await adminApiRequest(`/admin/users/${selectedUserId}/password`, 'PUT', { newPassword });
-    
-    showToast('Đã cấp lại mật khẩu thành công!');
-    closeResetPwdModal();
-    loadLogs();
-  } catch (error) {
-    showToast(error.message, 'error');
-  } finally {
-    const btn = $('#reset-pwd-submit');
-    btn.disabled = false;
-    btn.textContent = 'Xác nhận Đổi';
-  }
-};
 
 window.handleDeleteUser = async function(id, name) {
   if (!confirm(`Hành động này XÓA VĨNH VIỄN tài khoản "${name}" cùng toàn bộ dữ liệu. KHÔNG THỂ KHÔI PHỤC. Chắc chắn?`)) return;
@@ -531,15 +494,12 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#profile-modal-cancel').onclick = closeAdminProfileModal;
   $('#profile-form').onsubmit = handleUpdateAdminProfile;
 
-  // Admin Reset Password Modal
-  $('#reset-pwd-close').onclick = closeResetPwdModal;
-  $('#reset-pwd-cancel').onclick = closeResetPwdModal;
-  $('#reset-pwd-submit').onclick = handleForceResetPassword;
+  // Admin Reset Password Modal removed per security request
+
 
   // ESC to close reset modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if ($('#reset-password-modal').style.display === 'flex') closeResetPwdModal();
       if ($('#profile-modal').style.display === 'flex') closeAdminProfileModal();
     }
   });

@@ -7,8 +7,7 @@ const {
   deleteUser, 
   getDashboardStats,
   getActivityLogs,
-  broadcastEmail,
-  forceResetPassword
+  broadcastEmail
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 
@@ -22,7 +21,6 @@ router.get('/stats', getDashboardStats);
 router.get('/users', getUsers);
 router.put('/users/:id/status', toggleUserStatus);
 router.put('/users/:id/role', toggleRole);
-router.put('/users/:id/password', forceResetPassword);
 router.delete('/users/:id', deleteUser);
 
 // Logs & Broadcast
