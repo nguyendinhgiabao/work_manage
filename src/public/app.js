@@ -1386,13 +1386,17 @@ function renderCalendar() {
   const el = $('#full-calendar');
   const events = tasks
     .filter(t => t.dueDate)
-    .map(t => ({
-      id: t._id,
-      title: t.title,
-      start: t.dueDate,
-      backgroundColor: t.status === 'completed' ? '#27ae60' : (t.priority === 'high' ? '#eb5757' : '#2d68ff'),
-      borderColor: 'transparent'
-    }));
+    .map(t => {
+      const notebookTitle = (t.notebook && t.notebook.title) ? t.notebook.title : 'Chung';
+      return {
+        id: t._id,
+        title: `Sổ tay: ${notebookTitle} | ${t.title}`,
+        start: t.dueDate,
+        backgroundColor: '#eb5757',
+        borderColor: 'transparent',
+        textColor: '#ffffff'
+      };
+    });
 
   if (fullCalendar) {
     fullCalendar.removeAllEvents();

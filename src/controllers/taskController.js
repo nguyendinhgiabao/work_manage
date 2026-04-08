@@ -38,6 +38,7 @@ const createTask = async (req, res, next) => {
       notebook: notebookId,
     });
 
+    await task.populate('notebook', 'title');
     res.status(201).json(task);
   } catch (error) {
     next(error);
@@ -82,7 +83,7 @@ const getTasks = async (req, res, next) => {
       ];
     }
 
-    const tasks = await Task.find(filter).sort({ createdAt: -1 });
+    const tasks = await Task.find(filter).populate('notebook', 'title').sort({ createdAt: -1 });
     res.json(tasks);
   } catch (error) {
     next(error);
@@ -140,6 +141,7 @@ const updateTask = async (req, res, next) => {
     task.dueDate = dueDate !== undefined ? dueDate : task.dueDate;
 
     const updatedTask = await task.save();
+    await updatedTask.populate('notebook', 'title');
     res.json(updatedTask);
   } catch (error) {
     next(error);
