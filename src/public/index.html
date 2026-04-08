@@ -119,6 +119,10 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span>Trang Quản Trị</span>
         </button>  
+        <button class="btn-sidebar btn-profile" id="profile-btn" style="margin-bottom: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Tài khoản</span>
+        </button>
         <button class="btn-sidebar btn-logout" id="logout-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span>Đăng xuất</span>
@@ -400,6 +404,41 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="folder-modal-cancel">Hủy</button>
           <button type="submit" class="btn btn-primary" id="folder-modal-submit">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== PROFILE MODAL ========== -->
+  <div class="modal-overlay" id="profile-modal" style="display:none; z-index:9999;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Cập nhật Hồ sơ</h3>
+        <button class="modal-close" id="profile-modal-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="profile-form">
+        <div class="form-group">
+          <label>Tên hiển thị</label>
+          <input type="text" id="profile-name-input" required class="form-control" style="width:100%; border:1px solid var(--border-medium); padding:8px; border-radius:4px;">
+        </div>
+        
+        <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border-light);">
+          <h4 style="margin-bottom:15px; font-size:14px; color:var(--text-secondary);">Đổi mật khẩu (Tùy chọn)</h4>
+          <div class="form-group">
+            <label>Mật khẩu cũ</label>
+            <input type="password" id="profile-old-pwd" placeholder="Nhập nếu muốn đổi mật khẩu" class="form-control" style="width:100%; border:1px solid var(--border-medium); padding:8px; border-radius:4px;">
+          </div>
+          <div class="form-group">
+            <label>Mật khẩu mới</label>
+            <input type="password" id="profile-new-pwd" class="form-control" style="width:100%; border:1px solid var(--border-medium); padding:8px; border-radius:4px;">
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:20px;">
+          <button type="button" class="btn btn-ghost" id="profile-modal-cancel">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
         </div>
       </form>
     </div>

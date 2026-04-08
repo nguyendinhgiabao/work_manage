@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, sendOtp } = require('../controllers/authController');
+const { register, login, getProfile, updateProfile, sendOtp } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
 // POST /api/auth/register
@@ -14,5 +14,8 @@ router.post('/login', login);
 
 // GET /api/auth/profile (protected)
 router.get('/profile', protect, getProfile);
+
+// PUT /api/auth/profile (protected)
+router.put('/profile', protect, updateProfile);
 
 module.exports = router;

@@ -162,5 +162,53 @@ const getProfile = async (req, res, next) => {
     next(error);
   }
 };
+// @desc    Cập nhật thông tin profile
+// @route   PUT /api/auth/profile
+const updateProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
 
-module.exports = { register, sendOtp, login, getProfile };
+    const { name, currentPassword, newPassword } = req.body;
+
+    // Đổi tên
+    if (name) {
+      user.name = name.trim();
+    }
+
+    // Đổi mật khẩu
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Vui lòng nhập mật khẩu cũ để xác thực đổi mật khẩu mới' });
+      }
+      
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Mật khẩu cũ không chính xác' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+      }
+
+      user.password = newPassword;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      token: generateToken(updatedUser._id),
+      message: 'Cập nhật tài khoản thành công',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, sendOtp, login, getProfile, updateProfile };

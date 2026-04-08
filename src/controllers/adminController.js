@@ -109,6 +109,29 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+// @desc    Admin cấp lại / đổi mật khẩu cho người dùng
+// @route   PUT /api/admin/users/:id/password
+const forceResetPassword = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    await createLog('RESET_PASSWORD', req.user._id, user._id, `Quản trị viên đã cấp lại mật khẩu cho ${user.email}`);
+
+    res.json({ message: 'Đã thay đổi mật khẩu thành công!' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Lấy thống kê dashboard
 // @route   GET /api/admin/stats
 const getDashboardStats = async (req, res, next) => {
@@ -185,6 +208,7 @@ module.exports = {
   toggleUserStatus,
   toggleRole,
   deleteUser,
+  forceResetPassword,
   getDashboardStats,
   getActivityLogs,
   broadcastEmail

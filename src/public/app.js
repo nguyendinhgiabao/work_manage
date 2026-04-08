@@ -46,8 +46,9 @@ const listInProgress = $('#list-in-progress');
 const listCompleted = $('#list-completed');
 
 // Modals
-const notebookModal = $('#notebook-modal');
 const notebookForm = $('#notebook-form');
+const profileModal = $('#profile-modal');
+const profileForm = $('#profile-form');
 const taskModal = $('#task-modal');
 const taskForm = $('#task-form');
 const shareModal = $('#share-modal');
@@ -1343,9 +1344,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (taskModal.style.display === 'flex') closeTaskModal();
       else if (notebookModal.style.display === 'flex') closeNotebookModal();
       else if ($('#folder-modal').style.display === 'flex') closeFolderModal();
+      else if (profileModal.style.display === 'flex') closeProfileModal();
       else if ($('#search-wrapper').classList.contains('open')) closeSearch();
     }
   });
+
+  // Profile Modal
+  $('#profile-btn').onclick = openProfileModal;
+  $('#profile-modal-close').onclick = closeProfileModal;
+  $('#profile-modal-cancel').onclick = closeProfileModal;
+  profileForm.onsubmit = handleUpdateProfile;
 
   // Initial Auth Check
   if (getToken()) {
@@ -1461,6 +1469,50 @@ function renderCalendar() {
   });
   
   fullCalendar.render();
+}
+
+// ========== PROFILE FUNCTIONS ==========
+function openProfileModal() {
+  if (!currentUser) return;
+  $('#profile-name-input').value = currentUser.name;
+  $('#profile-old-pwd').value = '';
+  $('#profile-new-pwd').value = '';
+  profileModal.style.display = 'flex';
+}
+
+function closeProfileModal() {
+  profileModal.style.display = 'none';
+}
+
+async function handleUpdateProfile(e) {
+  e.preventDefault();
+  const name = $('#profile-name-input').value.trim();
+  const currentPassword = $('#profile-old-pwd').value;
+  const newPassword = $('#profile-new-pwd').value;
+
+  if (!name) return showToast('Tên không được để trống', 'error');
+  
+  const body = { name };
+  if (newPassword) {
+    if (!currentPassword) return showToast('Vui lòng nhập mật khẩu cũ để đổi mật khẩu mới', 'error');
+    if (newPassword.length < 6) return showToast('Mật khẩu mới phải từ 6 ký tự', 'error');
+    body.currentPassword = currentPassword;
+    body.newPassword = newPassword;
+  }
+
+  try {
+    const data = await apiRequest('/auth/profile', 'PUT', body);
+    currentUser = { ...currentUser, ...data };
+    
+    // Update UI
+    $('#user-name').textContent = currentUser.name;
+    $('#user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+    
+    showToast(data.message || 'Cập nhật thành công');
+    closeProfileModal();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 // ========== SHARE FUNCTIONS ==========
