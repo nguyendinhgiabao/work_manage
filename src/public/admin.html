@@ -166,6 +166,10 @@
             <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Tính năng này sẽ gửi một Email tới tất cả những người dùng có trạng thái 'active'. Hãy sử dụng cẩn thận (tránh việc spam).</p>
             <form id="broadcast-form">
               <div class="form-group" style="margin-bottom: 20px;">
+                <label for="broadcast-target">Gửi tới Email cụ thể (Bỏ trống để gửi Tất cả) </label>
+                <input type="email" id="broadcast-target" placeholder="vi-du@gmail.com" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+              </div>
+              <div class="form-group" style="margin-bottom: 20px;">
                 <label for="broadcast-subject">Tiêu đề thông báo *</label>
                 <input type="text" id="broadcast-subject" placeholder="Nhập tiêu đề email..." required style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
               </div>

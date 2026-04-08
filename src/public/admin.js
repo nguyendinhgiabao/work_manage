@@ -403,18 +403,23 @@ function renderLogs(logs) {
 // ========== TAB 4: BROADCAST EMAIL ==========
 async function handleBroadcast(e) {
   e.preventDefault();
+  const targetEmail = $('#broadcast-target').value.trim();
   const subject = $('#broadcast-subject').value.trim();
   const html = $('#broadcast-content').value.trim();
 
   if(!subject || !html) return;
-  if (!confirm('Bạn chuẩn bị gửi email tới TẤT CẢ thành viên Active. Bạn có chắc chắn?')) return;
+  const confirmMsg = targetEmail 
+    ? `Bạn chuẩn bị gửi email tới RIÊNG địa chỉ: ${targetEmail}. Bạn có chắc chắn?`
+    : 'Bạn chuẩn bị gửi email tới TẤT CẢ thành viên Active. Bạn có chắc chắn?';
+    
+  if (!confirm(confirmMsg)) return;
 
   const btn = $('#btn-send-broadcast');
   btn.disabled = true;
   btn.textContent = 'Đang gửi...';
 
   try {
-    const res = await adminApiRequest('/admin/broadcast', 'POST', { subject, html });
+    const res = await adminApiRequest('/admin/broadcast', 'POST', { subject, html, targetEmail });
     showToast(res.message);
     $('#broadcast-form').reset();
     loadLogs();

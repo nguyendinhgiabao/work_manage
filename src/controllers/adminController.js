@@ -179,7 +179,7 @@ const getActivityLogs = async (req, res, next) => {
 // @route POST /api/admin/broadcast
 const broadcastEmail = async (req, res, next) => {
   try {
-    const { subject, html } = req.body;
+    const { subject, html, targetEmail } = req.body;
     if (!subject || !html) return res.status(400).json({ message: 'Thiếu chủ đề hoặc nội dung' });
 
     const users = await User.find({ status: 'active' }).select('email');
@@ -196,16 +196,16 @@ const broadcastEmail = async (req, res, next) => {
 
     const mailOptions = {
       from: `"Sổ Tay Kanban" <${adminEmail}>`,
-      to: adminEmail, // Gửi cho chính mình
-      bcc: emails,    // Ẩn danh sách người nhận khác
+      to: targetEmail || adminEmail, // Gửi tới target hoặc gửi cho chính mình
+      bcc: targetEmail ? [] : emails,  // Nếu có target thì không bcc cho mọi người
       subject: subject,
       html: html
     };
 
-    console.log(`Đang gửi Broadcast tới ${users.length} người dùng...`);
+    console.log(targetEmail ? `Đang gửi email tới ${targetEmail}...` : `Đang gửi Broadcast tới ${users.length} người dùng...`);
     await transporter.sendMail(mailOptions);
     
-    await createLog('BROADCAST_EMAIL', req.user._id, null, `Gửi thông báo: ${subject}`);
+    await createLog('BROADCAST_EMAIL', req.user._id, null, targetEmail ? `Gửi mail tới ${targetEmail}: ${subject}` : `Gửi thông báo toàn hệ thống: ${subject}`);
 
     res.json({ message: `Đã phát thông báo thành công tới ${users.length} người dùng` });
   } catch (error) {
