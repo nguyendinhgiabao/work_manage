@@ -250,15 +250,13 @@ function onLoginSuccess() {
   $('#user-name').textContent = currentUser.name;
   $('#user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
   
-  // Reset view state theo cache
-  kanbanContainer.style.display = isCalendarMode ? 'none' : 'flex';
-  calendarViewContainer.style.display = isCalendarMode ? 'block' : 'none';
-  if (isCalendarMode) {
-    $('#btn-toggle-view').classList.add('active');
-    setTimeout(renderCalendar, 100);
-  } else {
-    $('#btn-toggle-view').classList.remove('active');
-  }
+  // Reset view state: Luôn ưu tiên Kanban khi mới vào để tránh bối rối
+  isCalendarMode = false;
+  localStorage.setItem('isCalendarMode', false);
+  
+  kanbanContainer.style.display = 'flex';
+  calendarViewContainer.style.display = 'none';
+  $('#btn-toggle-view').classList.remove('active');
   
   loadFolders();
   loadNotebooks();
@@ -1350,10 +1348,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Profile Modal
-  $('#profile-btn').onclick = openProfileModal;
-  $('#profile-modal-close').onclick = closeProfileModal;
-  $('#profile-modal-cancel').onclick = closeProfileModal;
-  profileForm.onsubmit = handleUpdateProfile;
+  const profileBtn = $('#profile-btn');
+  if (profileBtn) {
+    profileBtn.addEventListener('click', openProfileModal);
+  }
+  
+  const profileClose = $('#profile-modal-close');
+  if (profileClose) profileClose.addEventListener('click', closeProfileModal);
+  
+  const profileCancel = $('#profile-modal-cancel');
+  if (profileCancel) profileCancel.addEventListener('click', closeProfileModal);
+  
+  if (profileForm) {
+    profileForm.addEventListener('submit', handleUpdateProfile);
+  }
 
   // Initial Auth Check
   if (getToken()) {
@@ -1474,14 +1482,18 @@ function renderCalendar() {
 // ========== PROFILE FUNCTIONS ==========
 function openProfileModal() {
   if (!currentUser) return;
+  const modal = $('#profile-modal');
+  if (!modal) return;
+  
   $('#profile-name-input').value = currentUser.name;
   $('#profile-old-pwd').value = '';
   $('#profile-new-pwd').value = '';
-  profileModal.style.display = 'flex';
+  modal.style.display = 'flex';
 }
 
 function closeProfileModal() {
-  profileModal.style.display = 'none';
+  const modal = $('#profile-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 async function handleUpdateProfile(e) {
