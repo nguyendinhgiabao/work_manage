@@ -63,8 +63,8 @@ const getNotebooks = async (req, res, next) => {
 const updateNotebook = async (req, res, next) => {
   try {
     const { title, icon, color, folder } = req.body;
-    if (!title || !title.trim()) {
-      return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
+    if (title !== undefined && (!title || !title.trim())) {
+      return res.status(400).json({ message: 'Tên sổ tay không được để trống' });
     }
 
     const notebook = await Notebook.findOne({
@@ -79,7 +79,7 @@ const updateNotebook = async (req, res, next) => {
       return res.status(404).json({ message: 'Không tìm thấy sổ tay' });
     }
 
-    notebook.title = title.trim();
+    if (title !== undefined) notebook.title = title.trim();
     if (icon) notebook.icon = icon;
     if (color !== undefined) notebook.color = color;
     if (folder !== undefined) notebook.folder = folder;
