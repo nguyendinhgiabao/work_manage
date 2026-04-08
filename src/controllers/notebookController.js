@@ -11,6 +11,16 @@ const createNotebook = async (req, res, next) => {
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
+    if (folder) {
+      const parentFolder = await Folder.findOne({
+        _id: folder,
+        $or: [{ user: req.user._id }, { collaborators: req.user._id }]
+      });
+      if (!parentFolder) {
+        return res.status(403).json({ message: 'Thư mục không tồn tại hoặc bạn không có quyền truy cập.' });
+      }
+    }
+
     const notebook = new Notebook({
       title: title.trim(),
       user: req.user._id,
@@ -77,6 +87,16 @@ const updateNotebook = async (req, res, next) => {
 
     if (!notebook) {
       return res.status(404).json({ message: 'Không tìm thấy sổ tay' });
+    }
+
+    if (folder) {
+      const parentFolder = await Folder.findOne({
+        _id: folder,
+        $or: [{ user: req.user._id }, { collaborators: req.user._id }]
+      });
+      if (!parentFolder) {
+        return res.status(403).json({ message: 'Thư mục đích không tồn tại hoặc bạn không có quyền truy cập.' });
+      }
     }
 
     if (title !== undefined) notebook.title = title.trim();

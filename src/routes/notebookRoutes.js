@@ -9,14 +9,15 @@ const {
   removeMember,
 } = require('../controllers/notebookController');
 const { protect } = require('../middlewares/authMiddleware');
+const validateObjectId = require('../middlewares/validateObjectId');
 
 router.use(protect);
 
 router.post('/', createNotebook);
 router.get('/', getNotebooks);
-router.put('/:id', updateNotebook);
-router.delete('/:id', deleteNotebook);
-router.post('/:id/invite', inviteMember);
-router.delete('/:id/collaborators/:userId', removeMember);
+router.put('/:id', validateObjectId, updateNotebook);
+router.delete('/:id', validateObjectId, deleteNotebook);
+router.post('/:id/invite', validateObjectId, inviteMember);
+router.delete('/:id/collaborators/:userId', validateObjectId, removeMember);
 
 module.exports = router;

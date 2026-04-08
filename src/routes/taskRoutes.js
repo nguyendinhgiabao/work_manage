@@ -8,6 +8,7 @@ const {
   deleteTask,
 } = require('../controllers/taskController');
 const { protect } = require('../middlewares/authMiddleware');
+const validateObjectId = require('../middlewares/validateObjectId');
 
 // Tất cả routes đều yêu cầu xác thực
 router.use(protect);
@@ -19,12 +20,12 @@ router.post('/', createTask);
 router.get('/', getTasks);
 
 // GET /api/tasks/:id - Lấy chi tiết công việc
-router.get('/:id', getTaskById);
+router.get('/:id', validateObjectId, getTaskById);
 
 // PUT /api/tasks/:id - Cập nhật công việc
-router.put('/:id', updateTask);
+router.put('/:id', validateObjectId, updateTask);
 
 // DELETE /api/tasks/:id - Xóa công việc
-router.delete('/:id', deleteTask);
+router.delete('/:id', validateObjectId, deleteTask);
 
 module.exports = router;

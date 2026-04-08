@@ -64,6 +64,21 @@ app.get('{*path}', (req, res) => {
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(`[Error] ${err.stack || err.message}`);
+
+  // Mongoose Bad ObjectId
+  if (err.name === 'CastError') {
+    return res.status(400).json({ message: 'Dữ liệu ID không hợp lệ định dạng' });
+  }
+  // Mongoose Duplicate Key
+  if (err.code === 11000) {
+    return res.status(400).json({ message: 'Dữ liệu đã tồn tại (lỗi trùng lặp)' });
+  }
+  // Mongoose Validation Error
+  if (err.name === 'ValidationError') {
+    const messages = Object.values(err.errors).map(val => val.message);
+    return res.status(400).json({ message: messages.join(', ') });
+  }
+
   res.status(err.status || 500).json({
     message: err.status ? err.message : 'Lỗi hệ thống, vui lòng thử lại.',
   });
