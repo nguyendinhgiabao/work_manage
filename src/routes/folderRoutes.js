@@ -4,6 +4,7 @@ const {
   getFolders,
   createFolder,
   updateFolder,
+  deleteFolder,
   inviteMember,
   removeMember,
 } = require('../controllers/folderController');
