@@ -1465,10 +1465,13 @@ function openShareModal() {
   const notebook = notebooks.find(n => n._id === currentNotebookId);
   if (!notebook) return;
 
+  sharingType = 'notebook';
+  $('#share-modal-title').textContent = 'Chia sẻ Sổ tay';
+  $('#share-modal-desc').textContent = 'Mời thành viên cùng xem và chỉnh sửa sổ tay này.';
   $('#share-msg').textContent = '';
   $('#share-email-input').value = '';
   
-  renderCollaboratorsList(notebook);
+  renderCollaboratorsList(notebook.collaborators);
   shareModal.style.display = 'flex';
 }
 

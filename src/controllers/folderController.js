@@ -1,3 +1,4 @@
+const Folder = require('../models/Folder');
 const Notebook = require('../models/Notebook');
 const User = require('../models/User');
 
