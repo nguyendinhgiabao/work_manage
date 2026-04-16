@@ -16,7 +16,6 @@
 ---
 
 ## 📸 Ảnh Demo
-![Logo Dự Án](src/public/img/logowebsite.jpeg)
 *(Sẽ bổ sung thêm ảnh chụp màn hình giao diện trong tương lai)*
 <img width="1532" height="684" alt="Screenshot 2026-04-16 at 12 07 07" src="https://github.com/user-attachments/assets/21e77a8a-1008-4823-9fbf-c67f1f674b00" />
 
