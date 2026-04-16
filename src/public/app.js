@@ -1,24 +1,25 @@
 // ========== API CONFIG ==========
 const API_URL = '/api';
 
-// ========== STATE ==========
-let currentUser = null;
-let notebooks = [];
-let folders = [];
-let currentNotebookId = null;
-let tasks = [];
-let editingTaskId = null;
-let draggedTaskElement = null;
-let searchQuery = '';
-let sharingType = 'notebook'; // 'notebook' or 'folder'
-let currentFolderId = null;
-let draggedNotebookId = null;
-let isCalendarMode = localStorage.getItem('isCalendarMode') === 'true';
-let fullCalendar = null;
+// ========== BIẾN TRẠNG THÁI (STATE) ==========
+// Các biến này lưu trữ dữ liệu hiện tại của ứng dụng trong bộ nhớ (RAM)
+let currentUser = null;       // Thông tin người dùng đang đăng nhập
+let notebooks = [];         // Danh sách tất cả sổ tay
+let folders = [];           // Danh sách tất cả thư mục
+let currentNotebookId = null; // ID của sổ tay đang được xem
+let tasks = [];             // Danh sách các công việc (Task) của sổ tay hiện tại
+let editingTaskId = null;    // ID của task đang được chỉnh sửa (nếu có)
+let draggedTaskElement = null; // Element task đang được kéo (Drag & Drop)
+let searchQuery = '';        // Từ khóa tìm kiếm hiện tại
+let sharingType = 'notebook'; // Loại chia sẻ đang thao tác ('notebook' hoặc 'folder')
+let currentFolderId = null;   // ID thư mục hiện tại (dùng cho chia sẻ)
+let draggedNotebookId = null; // ID sổ tay đang được kéo vào thư mục
+let isCalendarMode = localStorage.getItem('isCalendarMode') === 'true'; // Chế độ hiển thị (Lịch hay Kanban)
+let fullCalendar = null;      // Đối tượng FullCalendar (thư viện bên thứ 3)
 
-// New: Inactivity Session Tracking
+// Cơ chế tự động đăng xuất nếu không hoạt động (Inactivity Session Tracking)
 let inactivityTimer = null;
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 mins
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // Thời gian chờ: 30 phút (tính bằng mili giây)
 
 // ========== DOM ELEMENTS ==========
 const $ = (sel) => document.querySelector(sel);
@@ -60,11 +61,16 @@ const getToken = () => localStorage.getItem('token');
 const setToken = (token) => localStorage.setItem('token', token);
 const removeToken = () => localStorage.removeItem('token');
 
+/**
+ * Hàm hỗ trợ gọi API lên server (Helper function)
+ * Tự động gắn Token vào Header và xử lý lỗi hệ thống/quá hạn
+ */
 async function apiRequest(endpoint, method = 'GET', body = null, timeoutMs = 15000) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers['Authorization'] = `Bearer ${token}`; // Gửi kèm mã định danh người dùng
 
+  // Thiết lập cơ chế Timeout (hủy yêu cầu nếu chờ quá lâu)
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -74,22 +80,29 @@ async function apiRequest(endpoint, method = 'GET', body = null, timeoutMs = 150
   try {
     const res = await fetch(`${API_URL}${endpoint}`, options);
     const data = await res.json();
+    
+    // Nếu phản hồi không thành công, quăng lỗi để phía gọi hàm xử lý (catch)
     if (!res.ok) throw new Error(data.message || 'Lỗi hệ thống');
     return data;
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('Yêu cầu quá thời gian chờ, vui lòng thử lại.');
     throw err;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timer); // Xóa bộ đếm thời gian khi đã hoàn tất (dù thành công hay lỗi)
   }
 }
 
+/**
+ * Hiển thị thông báo nhỏ (Toast) ở phía dưới màn hình
+ */
 function showToast(message, type = 'success') {
   const toast = $('#toast');
   toast.textContent = message;
   toast.className = `toast ${type}`;
   toast.style.display = 'block';
+  
   clearTimeout(toast._timeout);
+  // Tự động biến mất sau 3 giây
   toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
@@ -149,6 +162,9 @@ function switchView(isAuth) {
   }
 }
 
+/**
+ * Xử lý đăng nhập tài khoản
+ */
 async function handleLogin(e) {
   e.preventDefault();
   const email = $('#login-email').value.trim();
@@ -159,9 +175,15 @@ async function handleLogin(e) {
     authError.style.display = 'none';
     btn.disabled = true;
     btn.textContent = 'Đang đăng nhập...';
+    
+    // Gọi API đăng nhập
     const data = await apiRequest(`/auth/login`, 'POST', { email, password });
+    
+    // Lưu Token vào LocalStorage để duy trì trạng thái đăng nhập
     setToken(data.token);
     currentUser = data;
+    
+    // Chuyển sang giao diện làm việc chính
     onLoginSuccess();
   } catch (err) {
     authError.textContent = err.message;
@@ -172,11 +194,15 @@ async function handleLogin(e) {
   }
 }
 
+/**
+ * Gửi yêu cầu mã OTP để chuẩn bị đăng ký tài khoản mới
+ */
 async function requestOtp() {
   const name = $('#register-name').value.trim();
   const email = $('#register-email').value.trim();
   const password = $('#register-password').value;
 
+  // Kiểm tra tính hợp lệ cơ bản ở phía Client
   if (!name || !email || password.length < 6) {
     authError.textContent = 'Vui lòng nhập đủ tên, email và mật khẩu (tối thiểu 6 ký tự)';
     authError.style.display = 'block';
@@ -189,8 +215,10 @@ async function requestOtp() {
     btn.disabled = true;
     btn.textContent = 'Đang gửi mã...';
 
+    // Gọi API gửi OTP tới email người dùng
     await apiRequest('/auth/send-otp', 'POST', { email });
     
+    // Nếu thành công, chuyển sang màn hình nhập mã OTP vừa nhận được
     $('#register-step-1').style.display = 'none';
     $('#register-step-2').style.display = 'block';
     $('#display-otp-email').textContent = email;
@@ -336,14 +364,18 @@ async function loadFolders() {
   }
 }
 
+/**
+ * Vẽ danh sách Sổ tay và Thư mục lên Thanh bên (Sidebar)
+ * Đây là logic chính tạo nên cấu trúc phân cấp (Hierarchy) giống Notion
+ */
 function renderNotebookList() {
   notebookListUI.innerHTML = '';
   
-  // 1. Render UN-FOLDERED notebooks first
+  // 1. Vẽ các Sổ tay "Mồ côi" (Không nằm trong thư mục nào) lên trước
   const unfoldered = notebooks.filter(nb => !nb.folder);
   renderNotebookItems(unfoldered, notebookListUI);
 
-  // 2. Render FOLDERS and their notebooks
+  // 2. Vẽ từng Thư mục và danh sách Sổ tay con bên trong chúng
   folders.forEach(folder => {
     const folderEl = document.createElement('div');
     folderEl.className = `folder-item ${folder.expanded ? 'expanded' : ''}`;
@@ -929,6 +961,10 @@ function closeSearch() {
   applySearch();
 }
 
+/**
+ * Áp dụng bộ lọc tìm kiếm (Search) lên các Task đang hiển thị
+ * Ẩn/Hiện các Task dựa trên tiêu đề khớp với từ khóa
+ */
 function applySearch() {
   const q = searchQuery.toLowerCase().trim();
   $$('.task-item').forEach(el => {
@@ -942,6 +978,9 @@ function applySearch() {
   updateColumnEmptyState();
 }
 
+/**
+ * Hiển thị thông báo "Không tìm thấy" nếu cột Kanban trống sau khi tìm kiếm
+ */
 function updateColumnEmptyState() {
   ['pending', 'in-progress', 'completed'].forEach(status => {
     const list = $(`#list-${status}`);
@@ -986,7 +1025,11 @@ async function loadTasks() {
   }
 }
 
+/**
+ * Vẽ bảng Kanban với 3 cột trạng thái: Chờ xử lý, Đang làm, Đã xong
+ */
 function renderKanban() {
+  // Xóa trắng các cột trước khi vẽ lại
   listPending.innerHTML = '';
   listInProgress.innerHTML = '';
   listCompleted.innerHTML = '';
@@ -995,6 +1038,7 @@ function renderKanban() {
 
   tasks.forEach((task) => {
     let index = 0;
+    // Phân loại task vào đúng cột dựa trên status
     if (task.status === 'pending') { index = counts.pending++; }
     else if (task.status === 'in-progress') { index = counts['in-progress']++; }
     else if (task.status === 'completed') { index = counts.completed++; }
@@ -1005,11 +1049,12 @@ function renderKanban() {
     else if (task.status === 'completed') { listCompleted.appendChild(el); }
   });
 
+  // Cập nhật số lượng task hiển thị trên Badge của mỗi cột
   $('#badge-pending').textContent = counts.pending;
   $('#badge-progress').textContent = counts['in-progress'];
   $('#badge-completed').textContent = counts.completed;
 
-  // Reapply search filter after re-render
+  // Nếu đang có từ khóa tìm kiếm, áp dụng lại ngay sau khi vẽ
   if (searchQuery) applySearch();
 }
 

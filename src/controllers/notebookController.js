@@ -3,7 +3,7 @@ const Task = require('../models/Task');
 const Folder = require('../models/Folder');
 const User = require('../models/User');
 
-// @desc    Tạo sổ tay mới
+// @desc    Tạo sổ tay (notebook) mới
 // @route   POST /api/notebooks
 const createNotebook = async (req, res, next) => {
   try {
@@ -11,6 +11,8 @@ const createNotebook = async (req, res, next) => {
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Vui lòng nhập tên sổ tay' });
     }
+
+    // Nếu tạo trong thư mục, kiểm tra quyền sở hữu thư mục đó
     if (folder) {
       const parentFolder = await Folder.findOne({
         _id: folder,
@@ -23,11 +25,12 @@ const createNotebook = async (req, res, next) => {
 
     const notebook = new Notebook({
       title: title.trim(),
-      user: req.user._id,
+      user: req.user._id, // Chủ sở hữu là người đang đăng nhập
       icon: icon || '📄',
       color: color || '',
       folder: folder || null,
     });
+
     await notebook.save();
     await notebook.populate('user', 'name email');
     res.status(201).json(notebook);
@@ -112,23 +115,23 @@ const updateNotebook = async (req, res, next) => {
   }
 };
 
-// @desc    Xóa sổ tay (kèm theo toàn bộ task bên trong)
+// @desc    Xóa sổ tay (Cascading delete: xóa toàn bộ task bên trong)
 // @route   DELETE /api/notebooks/:id
 const deleteNotebook = async (req, res, next) => {
   try {
     const notebook = await Notebook.findOne({
       _id: req.params.id,
-      user: req.user._id, // Chỉ chủ sở hữu mới có quyền xóa
+      user: req.user._id, // Chỉ chủ sở hữu (Owner) mới có quyền xóa vĩnh viễn sổ tay
     });
 
     if (!notebook) {
       return res.status(404).json({ message: 'Không tìm thấy sổ tay hoặc bạn không có quyền xóa' });
     }
 
-    // Xóa tất cả tasks thuộc sổ tay này trước
+    // 1. Dọn dẹp: Xóa mọi ghi chú/công việc thuộc sổ tay này
     await Task.deleteMany({ notebook: notebook._id });
 
-    // Sau đó xóa sổ tay
+    // 2. Xóa chính sổ tay đó
     await Notebook.deleteOne({ _id: notebook._id });
     res.json({ message: 'Đã xóa sổ tay và các ghi chú bên trong' });
   } catch (error) {

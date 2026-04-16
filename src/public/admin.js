@@ -9,16 +9,16 @@ const contentView = $('#admin-content');
 const btnBackHome = $('#btn-back-home');
 const btnLogout = $('#logout-btn');
 
-// State
-let taskStatusChart = null;
-let growthChart = null;
-let currentUsers = [];
-let currentPage = 1;
-let currentLimit = 10;
-let searchQuery = '';
-let currentTotalPages = 1;
-let selectedUserId = null;
-let adminUser = null; // To store current admin's own info
+// ========== QUẢN LÝ TRẠNG THÁI (STATE) ==========
+let taskStatusChart = null; // Biểu đồ tròn hiển thị trạng thái công việc
+let growthChart = null;     // Biểu đồ cột hiển thị tổng quan hệ thống
+let currentUsers = [];      // Danh sách người dùng hiện đang hiển thị trên trang
+let currentPage = 1;        // Trang hiện tại
+let currentLimit = 10;      // Số bản ghi trên mỗi trang
+let searchQuery = '';       // Từ khóa tìm kiếm người dùng
+let currentTotalPages = 1;  // Tổng số trang (tính từ server)
+let selectedUserId = null;  // ID của người dùng đang được chọn xử lý
+let adminUser = null;       // Lưu thông tin cá nhân của chính Admin đang đăng nhập
 
 // Helpers
 const getToken = () => localStorage.getItem('token');
@@ -139,6 +139,9 @@ async function handleUpdateAdminProfile(e) {
 }
 
 // ========== TAB 1: DASHBOARD ==========
+/**
+ * Đổ dữ liệu thống kê tổng quan vào các thẻ (Cards) trên Dashboard
+ */
 function renderOverviewStats(overview, newUsersStr) {
   $('#stat-total-users').textContent = overview.users;
   $('#stat-total-notebooks').textContent = overview.notebooks;
@@ -154,14 +157,17 @@ function getChartColors() {
   };
 }
 
+/**
+ * Vẽ các biểu đồ thống kê sử dụng thư viện Chart.js
+ */
 function renderCharts(stats) {
   const colors = getChartColors();
   Chart.defaults.color = colors.textColor;
   Chart.defaults.font.family = "'Inter', Arial, sans-serif";
 
-  // Task Doughnut Chart
+  // 1. Biểu đồ tròn (Doughnut): Phân bổ trạng thái công việc toàn hệ thống
   const ctxStatus = $('#taskStatusChart').getContext('2d');
-  if (taskStatusChart) taskStatusChart.destroy();
+  if (taskStatusChart) taskStatusChart.destroy(); // Xóa biểu đồ cũ nếu có để vẽ mới
   
   taskStatusChart = new Chart(ctxStatus, {
     type: 'doughnut',
@@ -301,17 +307,20 @@ window.handleDeleteUser = async function(id, name) {
   }
 };
 
-// CSV Export
+/**
+ * Xuất danh sách người dùng hiện tại ra file CSV để quản lý ngoại tuyến (Excel/Google Sheets)
+ */
 window.downloadCSV = function() {
   if (currentUsers.length === 0) return showToast('Không có dữ liệu để xuất', 'error');
 
+  // Gắn mã BOM (\uFEFF) để Excel nhận diện đúng font tiếng Việt (UTF-8)
   let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
   csvContent += "ID,Tên,Email,Phân Quyền,Trạng Thái,Ngày Tạo\n";
 
   currentUsers.forEach(function(u) {
     const row = [
       u._id,
-      `"${u.name.replace(/"/g, '""')}"`,
+      `"${u.name.replace(/"/g, '""')}"`, // Escape dấu ngoặc kép trong CSV
       `"${u.email.replace(/"/g, '""')}"`,
       u.role,
       u.status,
@@ -320,6 +329,7 @@ window.downloadCSV = function() {
     csvContent += row.join(",") + "\n";
   });
 
+  // Tạo liên kết tải xuống ảo để kích hoạt trình duyệt lưu file
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
@@ -363,7 +373,9 @@ function renderLogs(logs) {
   });
 }
 
-// ========== TAB 4: BROADCAST EMAIL ==========
+/**
+ * Xử lý việc gửi Email thông báo từ giao diện Admin
+ */
 async function handleBroadcast(e) {
   e.preventDefault();
   const targetEmail = $('#broadcast-target').value.trim();
@@ -371,6 +383,8 @@ async function handleBroadcast(e) {
   const html = $('#broadcast-content').value.trim();
 
   if(!subject || !html) return;
+
+  // Hiển thị cảnh báo xác nhận tùy theo phạm vi gửi thông báo
   const confirmMsg = targetEmail 
     ? `Bạn chuẩn bị gửi email tới RIÊNG địa chỉ: ${targetEmail}. Bạn có chắc chắn?`
     : 'Bạn chuẩn bị gửi email tới TẤT CẢ thành viên Active. Bạn có chắc chắn?';
@@ -382,10 +396,11 @@ async function handleBroadcast(e) {
   btn.textContent = 'Đang gửi...';
 
   try {
+    // Gọi API broadcast lên Backend
     const res = await adminApiRequest('/admin/broadcast', 'POST', { subject, html, targetEmail });
     showToast(res.message);
-    $('#broadcast-form').reset();
-    loadLogs();
+    $('#broadcast-form').reset(); // Xóa nội dung form sau khi gửi thành công
+    loadLogs(); // Cập nhật lại danh sách nhật ký để thấy hành động vừa rồi
   } catch (error) {
     showToast(error.message, 'error');
   } finally {

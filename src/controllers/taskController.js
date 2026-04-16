@@ -1,7 +1,7 @@
 const Task = require('../models/Task');
 const Notebook = require('../models/Notebook');
 
-// @desc    Tạo công việc mới
+// @desc    Tạo công việc (Task) mới
 // @route   POST /api/tasks
 const createTask = async (req, res, next) => {
   try {
@@ -15,7 +15,7 @@ const createTask = async (req, res, next) => {
       return res.status(400).json({ message: 'Cần chọn sổ tay (notebook) để chứa ghi chú' });
     }
 
-    // Kiểm tra quyền trong Notebook (Phải là chủ hoặc thành viên)
+    // Kiểm tra quyền: Chỉ những ai là chủ sở hữu hoặc thành viên của Notebook mới được thêm Task
     const notebook = await Notebook.findOne({
       _id: notebookId,
       $or: [
@@ -31,10 +31,10 @@ const createTask = async (req, res, next) => {
     const task = await Task.create({
       title: title.trim(),
       description,
-      status,
-      priority,
+      status, // 'pending', 'in-progress', 'completed'
+      priority, // 'low', 'medium', 'high'
       dueDate,
-      user: req.user._id,
+      user: req.user._id, // Lưu vết người tạo task
       notebook: notebookId,
     });
 
@@ -45,7 +45,7 @@ const createTask = async (req, res, next) => {
   }
 };
 
-// @desc    Lấy danh sách công việc (lọc theo notebook, status, priority, từ khóa)
+// @desc    Lấy danh sách công việc (Có bộ lọc theo Sổ tay, Trạng thái, Độ ưu tiên và Tìm kiếm)
 // @route   GET /api/tasks
 const getTasks = async (req, res, next) => {
   try {
@@ -53,8 +53,9 @@ const getTasks = async (req, res, next) => {
     
     let filter = {};
 
+    // Phân quyền dữ liệu: Lấy đúng nội dung người dùng được phép xem
     if (notebookId) {
-      // 1. Kiểm tra quyền truy cập Notebook
+      // 1. Kiểm tra xem user có quyền truy cập vào Notebook này không
       const notebook = await Notebook.findOne({
         _id: notebookId,
         $or: [
@@ -68,13 +69,15 @@ const getTasks = async (req, res, next) => {
       }
       filter.notebook = notebookId;
     } else {
-      // Nếu không lọc theo Notebook -> chỉ lấy Task do chính user tạo
+      // 2. Nếu không chọn Notebook cụ thể, chỉ hiển thị Task do chính User tạo
       filter.user = req.user._id;
     }
 
+    // Các bộ lọc bổ sung
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
 
+    // Tìm kiếm mờ theo tiêu đề hoặc mô tả (Regex Case-Insensitive)
     if (search && search.trim()) {
       const keyword = search.trim();
       filter.$or = [
@@ -90,7 +93,7 @@ const getTasks = async (req, res, next) => {
   }
 };
 
-// @desc    Lấy chi tiết 1 công việc
+// @desc    Lấy thông tin chi tiết của 1 công việc
 // @route   GET /api/tasks/:id
 const getTaskById = async (req, res, next) => {
   try {
@@ -100,7 +103,7 @@ const getTaskById = async (req, res, next) => {
       return res.status(404).json({ message: 'Không tìm thấy công việc' });
     }
 
-    // Kiểm tra quyền qua Sổ tay
+    // Kiểm tra quyền xem thông qua quyền truy cập Sổ tay chứa Task đó
     const hasAccess = task.notebook.user.equals(req.user._id) || 
                       task.notebook.collaborators.includes(req.user._id);
 
@@ -114,7 +117,7 @@ const getTaskById = async (req, res, next) => {
   }
 };
 
-// @desc    Cập nhật công việc
+// @desc    Cập nhật nội dung hoặc trạng thái công việc
 // @route   PUT /api/tasks/:id
 const updateTask = async (req, res, next) => {
   try {
@@ -124,7 +127,7 @@ const updateTask = async (req, res, next) => {
       return res.status(404).json({ message: 'Không tìm thấy công việc' });
     }
 
-    // Kiểm tra quyền (Bất kỳ thành viên nào trong Sổ tay đều có thể sửa/cập nhật trạng thái)
+    // Phân quyền sửa: Bất kỳ ai có quyền truy cập Notebook (Collaborators) đều có thể kéo thả Task
     const hasAccess = task.notebook.user.equals(req.user._id) || 
                       task.notebook.collaborators.includes(req.user._id);
 
@@ -148,7 +151,7 @@ const updateTask = async (req, res, next) => {
   }
 };
 
-// @desc    Xóa công việc
+// @desc    Xóa vĩnh viễn công việc
 // @route   DELETE /api/tasks/:id
 const deleteTask = async (req, res, next) => {
   try {
@@ -158,7 +161,7 @@ const deleteTask = async (req, res, next) => {
       return res.status(404).json({ message: 'Không tìm thấy công việc' });
     }
 
-    // Phân quyền Xóa (Phương án A): Chỉ Chủ sổ tay HOẶC Người tạo Task mới được xóa
+    // Bảo mật hành động xóa: Chỉ Chủ sổ tay (Owner) HOẶC Người tạo ra Task mới được xóa
     const canDelete = task.user.equals(req.user._id) || 
                       task.notebook.user.equals(req.user._id);
 

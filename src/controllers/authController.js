@@ -3,23 +3,25 @@ const User = require('../models/User');
 const Otp = require('../models/Otp');
 const transporter = require('../config/email');
 
-// Tạo JWT token (7 ngày)
+// Tạo JWT token (có hiệu lực trong 7 ngày) để duy trì phiên đăng nhập cho người dùng
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   });
 };
 
-// @desc    Đăng ký tài khoản mới (Có xác thực OTP)
+// @desc    Đăng ký tài khoản mới (Yêu cầu xác thực qua mã OTP)
 // @route   POST /api/auth/register
 const register = async (req, res, next) => {
   try {
     const { name, email, password, otp } = req.body;
 
+    // 1. Kiểm tra các trường thông tin bắt buộc
     if (!name || !email || !password || !otp) {
       return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin' });
     }
 
+    // 2. Kiểm tra độ dài mật khẩu để đảm bảo bảo mật cơ bản
     if (password.length < 6) {
       return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự' });
     }
@@ -30,17 +32,17 @@ const register = async (req, res, next) => {
       return res.status(400).json({ message: 'Email đã được sử dụng' });
     }
 
-    // Kiểm tra OTP
+    // 4. Kiểm tra tính hợp lệ của mã OTP (đúng email và đúng mã số)
     const validOtp = await Otp.findOne({ email, otp });
     if (!validOtp) {
       return res.status(400).json({ message: 'Mã OTP không đúng hoặc đã hết hạn' });
     }
 
-    // Tạo user mới
+    // 5. Khởi tạo tài khoản người dùng mới (Mật khẩu được băm tự động trong User Model)
     const user = await User.create({ name, email, password });
 
     if (user) {
-      // Xóa OTP khỏi database sau khi xác thực thành công
+      // 6. Xóa toàn bộ OTP cũ của email này để tránh việc tái sử dụng
       await Otp.deleteMany({ email });
       // Ghi nhật ký đăng ký
       const ActivityLog = require('../models/ActivityLog');
@@ -114,7 +116,7 @@ const sendOtp = async (req, res, next) => {
   }
 };
 
-// @desc    Đăng nhập
+// @desc    Đăng nhập hệ thống
 // @route   POST /api/auth/login
 const login = async (req, res, next) => {
   try {
@@ -124,15 +126,18 @@ const login = async (req, res, next) => {
       return res.status(400).json({ message: 'Vui lòng nhập email và mật khẩu' });
     }
 
+    // Tìm người dùng theo email
     const user = await User.findOne({ email });
 
+    // Kiểm tra xem user có tồn tại và mật khẩu có khớp không
     if (user && (await user.matchPassword(password))) {
-      // Ghi nhật ký đăng nhập
+      // Ghi lại nhật ký đăng nhập để Admin có thể quản lý lịch sử truy cập
       const ActivityLog = require('../models/ActivityLog');
       try {
         await ActivityLog.create({ action: 'LOGIN', byUser: user._id, details: 'Đăng nhập thành công' });
       } catch (e) {}
 
+      // Trả về thông tin người dùng kèm theo JWT Token
       res.json({
         _id: user._id,
         name: user.name,
@@ -148,10 +153,11 @@ const login = async (req, res, next) => {
   }
 };
 
-// @desc    Lấy thông tin profile
+// @desc    Lấy thông tin cá nhân (Profile) của người dùng đang đăng nhập
 // @route   GET /api/auth/profile
 const getProfile = async (req, res, next) => {
   try {
+    // req.user được gán từ Middleware bảo vệ (protect)
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
       res.json(user);
@@ -162,7 +168,8 @@ const getProfile = async (req, res, next) => {
     next(error);
   }
 };
-// @desc    Cập nhật thông tin profile
+
+// @desc    Cập nhật thông tin cá nhân và mật khẩu
 // @route   PUT /api/auth/profile
 const updateProfile = async (req, res, next) => {
   try {
@@ -173,12 +180,12 @@ const updateProfile = async (req, res, next) => {
 
     const { name, currentPassword, newPassword } = req.body;
 
-    // Đổi tên
+    // 1. Cập nhật Tên hiển thị nếu có thay đổi
     if (name) {
       user.name = name.trim();
     }
 
-    // Đổi mật khẩu
+    // 2. Xử lý đổi Mật khẩu (yêu cầu mật khẩu cũ để xác thực)
     if (newPassword) {
       if (!currentPassword) {
         return res.status(400).json({ message: 'Vui lòng nhập mật khẩu cũ để xác thực đổi mật khẩu mới' });
