@@ -1,103 +1,82 @@
-# Hệ Thống Quản Lý Công Việc (Work Management System)
+# 🚀 Work Management System
 
-## 📝 Giới Thiệu Tổng Quan
-Dự án **Work Management** là một hệ thống backend mạnh mẽ được xây dựng bằng Node.js và Express, được thiết kế để giúp người dùng tổ chức công việc theo cấu trúc phân cấp: **Sổ tay (Notebooks) > Thư mục (Folders) > Công việc (Tasks)**. Hệ thống tích hợp các cơ chế bảo mật hiện đại, xác thực mã OTP qua email và quản trị viên (Admin) để theo dõi hoạt động toàn hệ thống.
-
----
-
-## 🚀 Công Nghệ Áp Dụng
-Hệ thống sử dụng các công nghệ hiện đại nhằm đảm bảo hiệu năng và tính bảo mật:
-
-- **Ngôn ngữ & Runtime**: Node.js, JavaScript (CommonJS).
-- **Framework**: Express.js (Phiên bản mới nhất).
-- **Cơ sở dữ liệu**: MongoDB với thư viện Mongoose để quản lý Schema.
-- **Xác thực & Bảo mật**:
-  - **JWT (JSON Web Token)**: Quản lý phiên đăng nhập của người dùng.
-  - **Bcryptjs**: Mã hóa mật khẩu an toàn.
-  - **Helmet**: Bảo vệ ứng dụng khỏi các lỗ hổng web phổ biến.
-  - **Express-rate-limit**: Chống tấn công Brute-force bằng cách giới hạn số lượng yêu cầu.
-  - **CORS**: Kiểm soát các nguồn truy cập vào API.
-- **Tiện ích khác**:
-  - **Nodemailer**: Gửi mã OTP xác thực qua Email.
-  - **Dotenv**: Quản lý biến môi trường.
+## 📝 Mô Tả Dự Án
+**Work Management System** là một nền tảng quản lý công việc thông minh, giúp cá nhân và tổ chức tối ưu hóa quy trình làm việc. Hệ thống cho phép người dùng tổ chức nhiệm vụ theo cấu trúc phân cấp linh hoạt, giúp theo dõi tiến độ một cách trực quan và khoa học. Với cơ chế bảo mật cao và giao diện thân thiện, đây là công cụ đắc lực để nâng cao hiệu suất làm việc hàng ngày.
 
 ---
 
-## 🏗️ Cấu Trúc Thư Mục
-Dự án được tổ chức theo mô hình MVC thu gọn, giúp dễ dàng mở rộng và bảo trì:
+## ✨ Tính Năng Chính
+- **Quản lý phân cấp**: Tổ chức công việc theo mô hình **Sổ tay > Thư mục > Công việc**, giúp quản lý từ bao quát đến chi tiết.
+- **Xác thực an toàn**: Hệ thống đăng ký/đăng nhập tích hợp mã OTP gửi qua Email, đảm bảo tính bảo mật tuyệt đối cho tài khoản.
+- **Giao diện trực quan**: Hỗ trợ Dashboard theo dõi trạng thái công việc (Đang làm, Hoàn thành, Quá hạn).
+- **Phân quyền người dùng**: Phân chia rõ ràng giữa tài khoản Người dùng (User) và Quản trị viên (Admin).
+- **Nhật ký hoạt động**: Admin có thể theo dõi mọi hoạt động thay đổi trên hệ thống để đảm bảo tính minh bạch.
+- **Bảo mật đa lớp**: Sử dụng JWT, mã hóa mật khẩu Bcrypt, cùng các lớp phòng vệ chống tấn công Brute-force và XSS.
 
-```text
-work_management/
-├── src/
-│   ├── app.js            # Điểm khởi đầu của ứng dụng (Entry point)
-│   ├── config/           # Cấu hình DB và các dịch vụ khác
-│   ├── controllers/      # Xử lý logic nghiệp vụ
-│   ├── middlewares/      # Chặn/lọc yêu cầu (Auth, Validation, Bảo mật)
-│   ├── models/           # Định nghĩa Schema cho MongoDB (Mongoose)
-│   ├── routes/           # Định nghĩa các API endpoints
-│   └── public/           # Các tệp tĩnh (Giao diện web nếu có)
-├── .env                  # Biến môi trường (Chứa thông tin nhạy cảm)
-├── package.json          # Quản lý thư viện và scripts
-└── seedAdmin.js          # Script để tạo tài khoản Admin mặc định
+---
+
+## 📸 Ảnh Demo
+![Logo Dự Án](src/public/img/logowebsite.jpeg)
+*(Sẽ bổ sung thêm ảnh chụp màn hình giao diện trong tương lai)*
+
+---
+
+## 🛠️ Hướng Dẫn Cài Đặt
+
+### Bước 1: Tải mã nguồn
+```bash
+git clone <url-cua-ban>
+cd work_management
 ```
 
----
-
-## 🔄 Luồng Đi Của Dữ Liệu (Data Flow)
-1. **Request**: Người dùng gửi yêu cầu từ trình duyệt hoặc ứng dụng mobile đến server.
-2. **Middleware**: Yêu cầu đi qua các lớp bảo mật (Helmet), giới hạn tần suất (Rate Limit), và kiểm tra token (Auth Middleware) nếu cần.
-3. **Routing**: Hệ thống phân loại yêu cầu dựa trên URL (ví dụ: `/api/tasks` sẽ được chuyển đến `taskRoutes`).
-4. **Controller**: Thực hiện xử lý logic (tính toán, kiểm tra quyền hạn, gọi DB).
-5. **Model**: Tương tác với MongoDB để lấy hoặc ghi dữ liệu.
-6. **Response**: Controller nhận kết quả từ Model và gửi phản hồi trả lại cho người dùng theo định dạng JSON.
-
----
-
-## ⚙️ Cài Đặt Và Khởi Chạy
-
-### 1. Yêu Cầu Hệ Thống
-- Node.js (Phiên bản >= 16.x)
-- MongoDB (Sử dụng MongoDB Atlas hoặc local)
-
-### 2. Các Bước Cài Đặt
-Tải mã nguồn về máy và thực hiện các bước sau:
-
+### Bước 2: Cài đặt thư viện
 ```bash
-# Cài đặt các thư viện phụ thuộc
 npm install
+```
 
-# Tạo tài khoản Admin mặc định (Lần đầu tiên)
+### Bước 3: Cấu hình môi trường (`.env`)
+Tạo tệp `.env` tại thư mục gốc và cấu hình các thông số sau:
+```env
+PORT=3000
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/work_manage
+JWT_SECRET=your_secret_key
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+```
+
+### Bước 4: Khởi tạo dữ liệu Admin
+```bash
 node seedAdmin.js
 ```
 
-### 3. Cấu Hình Biến Môi Trường (`.env`)
-Tạo tệp `.env` ở thư mục gốc và điền các thông tin sau:
-```env
-PORT=3000
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/work_manage
-JWT_SECRET=your_jwt_secret_key
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_email_app_password
-ALLOWED_ORIGIN=*
-```
+---
 
-### 4. Khởi Chạy Dự Án
-- **Chế độ phát triển (Development)**: Sử dụng `--watch` để tự động khởi động lại khi sửa code.
-  ```bash
-  npm run dev
-  ```
-- **Chế độ vận hành (Production)**:
-  ```bash
-  npm start
-  ```
+## 💡 Cách Sử Dụng
+1. **Khởi chạy Server**: 
+   - Phát triển: `npm run dev`
+   - Vận hành: `npm start`
+2. **Truy cập**: Mở trình duyệt và truy cập `http://localhost:3000`.
+3. **Đăng ký/Đăng nhập**: Sử dụng Email để nhận mã OTP và bắt đầu trải nghiệm.
+4. **Tạo Sổ tay**: Bắt đầu bằng việc tạo một Sổ tay mới, sau đó thêm các Thư mục và Công việc cần làm vào bên trong.
+5. **Cập nhật trạng thái**: Đánh dấu hoàn thành công việc sau khi đã xử lý xong.
 
 ---
 
-## 🛠️ Các Tính Năng Chính
-- **Hệ thống xác thực**: Đăng ký, Đăng nhập và Quên mật khẩu thông qua mã OTP gửi tới Email.
-- **Quản lý phân cấp**: Tạo sổ tay, trong sổ tay chứa thư mục, trong thư mục chứa công việc chi tiết.
-- **Quản trị**: Admin có thể xem nhật ký hoạt động (`ActivityLogs`) và quản lý người dùng.
-- **Bảo mật**: Giới hạn số lần gửi OTP (5 lần/15 phút) và giới hạn đăng nhập (20 lần/15 phút).
+## 💻 Công Nghệ Sử Dụng
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB & Mongoose
+- **Bảo mật**: JWT, Bcryptjs, Helmet, Express-rate-limit
+- **Dịch vụ Email**: Nodemailer (Gửi OTP)
+- **Frontend**: HTML5, CSS3, JavaScript (Vanilla JS)
 
 ---
-*Dự án được phát triển bởi đội ngũ đam mê công nghệ.*
+
+## 👤 Thông Tin Tác Giả
+Mọi thắc mắc hoặc góp ý về dự án, vui lòng liên hệ:
+
+- **Email**: [baonguyendinhgia9@gmail.com](mailto:baonguyendinhgia9@gmail.com)
+- **Số điện thoại**: 0398961702
+- **Tác giả**: Nguyễn Đình Gia Bảo
+
+---
+*Cảm ơn bạn đã quan tâm đến dự án của tôi!*
